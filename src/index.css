@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #a70025;
+  --color-primary-container: #d21034;
+  --color-on-primary-container: #ffe5e4;
+  --color-primary-fixed: #ffdad9;
+  --color-primary-fixed-dim: #ffb3b2;
+  --color-on-primary-fixed: #410008;
+  --color-on-primary-fixed-variant: #92001f;
+
+  --color-secondary: #1b5eac;
+  --color-secondary-container: #76acff;
+  --color-on-secondary-container: #003f7c;
+  --color-secondary-fixed: #d5e3ff;
+  --color-secondary-fixed-dim: #a8c8ff;
+  --color-on-secondary-fixed: #001b3c;
+  --color-on-secondary-fixed-variant: #004689;
+
+  --color-tertiary: #6d4c00;
+  --color-tertiary-container: #8c6200;
+  --color-on-tertiary-container: #ffe8c6;
+  --color-tertiary-fixed: #ffdeaa;
+  --color-tertiary-fixed-dim: #ffba2c;
+  --color-on-tertiary-fixed: #271900;
+  --color-on-tertiary-fixed-variant: #5f4100;
+
+  --color-surface: #f8f9fa;
+  --color-surface-dim: #d9dadb;
+  --color-surface-bright: #f8f9fa;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f4f5;
+  --color-surface-container: #edeeef;
+  --color-surface-container-high: #e7e8e9;
+  --color-surface-container-highest: #e1e3e4;
+  --color-on-surface: #191c1d;
+  --color-on-surface-variant: #5c3f3f;
+  --color-outline: #916f6e;
+  --color-outline-variant: #e5bdbc;
+  --color-background: #f8f9fa;
+  --color-on-background: #191c1d;
+
+  --font-sans: 'Work Sans', sans-serif;
+  --font-display: 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* Glass card styling */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Smooth transition for active tab */
+.nav-link-active {
+  color: var(--color-primary);
+  font-weight: 700;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+/* Scrollbar styling */
+.wholesale-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.wholesale-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.wholesale-scroll::-webkit-scrollbar-thumb {
+  background: #a70025;
+  border-radius: 10px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+

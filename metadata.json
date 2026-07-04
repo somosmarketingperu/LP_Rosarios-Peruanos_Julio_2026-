@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Rosarios Peruanos",
+  "description": "Venta al por mayor de rosarios plásticos de alta calidad en el Perú",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
