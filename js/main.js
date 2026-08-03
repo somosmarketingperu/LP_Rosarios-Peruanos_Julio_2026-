@@ -732,6 +732,7 @@ function retryOrderSubmit() {
 }
 
 let lastGeneratedOrderPayload = null;
+let waRedirectTimer = null;
 
 function openOrderSuccessModal(orderData, waUrl) {
   lastGeneratedOrderPayload = orderData;
@@ -742,16 +743,44 @@ function openOrderSuccessModal(orderData, waUrl) {
   const totalEl = document.getElementById('success-modal-total');
   const unitsEl = document.getElementById('success-modal-units');
   const waBtn = document.getElementById('success-modal-wa-btn');
+  const countdownEl = document.getElementById('wa-countdown-num');
 
   if (idEl) idEl.innerText = orderData.orderId;
   if (totalEl) totalEl.innerText = 'S/. ' + orderData.grandTotal.toFixed(2);
   if (unitsEl) unitsEl.innerText = orderData.totalUnits.toLocaleString() + ' u';
-  if (waBtn) waBtn.href = waUrl;
+  if (waBtn) {
+    waBtn.href = waUrl;
+    waBtn.onclick = () => {
+      if (waRedirectTimer) {
+        clearInterval(waRedirectTimer);
+        waRedirectTimer = null;
+      }
+    };
+  }
 
   modal.classList.add('active');
+
+  // Redirección automática progresiva en 5 segundos a WhatsApp Chatbot
+  let count = 5;
+  if (countdownEl) countdownEl.innerText = count;
+  if (waRedirectTimer) clearInterval(waRedirectTimer);
+
+  waRedirectTimer = setInterval(() => {
+    count--;
+    if (countdownEl) countdownEl.innerText = count;
+    if (count <= 0) {
+      clearInterval(waRedirectTimer);
+      waRedirectTimer = null;
+      window.open(waUrl, '_blank');
+    }
+  }, 1000);
 }
 
 function closeOrderSuccessModal() {
+  if (waRedirectTimer) {
+    clearInterval(waRedirectTimer);
+    waRedirectTimer = null;
+  }
   const modal = document.getElementById('order-success-modal');
   if (modal) modal.classList.remove('active');
 }

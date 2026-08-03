@@ -1045,7 +1045,7 @@
 
   <!-- MODAL: ÉXITO DE ORDEN DE COMPRA GENERADA -->
   <div id="order-success-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 480px; overflow: hidden; border-radius: var(--radius-xl);">
+    <div class="modal-card" style="max-width: 500px; overflow: hidden; border-radius: var(--radius-xl);">
       
       <!-- Header banner -->
       <div style="background: linear-gradient(135deg, #047857, #10b981); color: white; padding: 1.5rem; text-align: center; position: relative;">
@@ -1057,6 +1057,22 @@
 
       <div class="modal-body" style="padding: 1.25rem;">
         
+        <!-- CALLOUT BOX CHATBOT WHATSAPP DESTACADO -->
+        <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: var(--radius-lg); padding: 1.1rem; margin-bottom: 1rem; text-align: center; box-shadow: 0 4px 14px rgba(34,197,94,0.18);">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: #15803d; font-weight: 800; font-size: 1rem; margin-bottom: 0.4rem;">
+            <span style="font-size: 1.3rem;">🤖</span> ATENCIÓN INMEDIATA VÍA CHATBOT 24/7
+          </div>
+          <p style="font-size: 0.85rem; color: #166534; margin: 0 0 0.85rem; line-height: 1.4; font-weight: 600;">
+            👉 <strong>Paso Final Obligatorio:</strong> Envía tu Orden a WhatsApp para que nuestro Chatbot verifique tu stock en almacén e inicie tu despacho.
+          </p>
+          <a id="success-modal-wa-btn" href="#" target="_blank" class="btn-primary" style="background: #16a34a; width: 100%; justify-content: center; padding: 0.95rem; font-size: 1.05rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(22,163,74,0.35); border-radius: var(--radius-md);">
+            💬 ENVIAR ORDEN A WHATSAPP CHATBOT →
+          </a>
+          <div id="wa-redirect-timer" style="font-size: 0.78rem; color: #15803d; margin-top: 0.6rem; font-weight: 700;">
+            ⏳ Redirigiendo automáticamente al WhatsApp Chatbot en <span id="wa-countdown-num" style="font-size: 1rem; color: #15803d; font-weight: 900;">5</span> segundos...
+          </div>
+        </div>
+
         <!-- Summary order info card -->
         <div style="background: var(--surface-alt); padding: 1rem; border-radius: var(--radius-lg); border: 1px solid var(--border-light); margin-bottom: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -1082,9 +1098,6 @@
 
         <!-- Action buttons -->
         <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-          <a id="success-modal-wa-btn" href="#" target="_blank" class="btn-primary" style="background: #10b981; width: 100%; justify-content: center; padding: 0.85rem; font-size: 1rem; text-decoration: none;">
-            💬 Abrir WhatsApp con Silvia Quispe
-          </a>
           <button type="button" onclick="window.app.redownloadOrderPDF()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 0.85rem;">
             📄 Volver a Descargar Orden de Compra PDF
           </button>

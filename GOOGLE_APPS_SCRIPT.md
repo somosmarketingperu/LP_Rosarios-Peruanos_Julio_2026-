@@ -269,7 +269,10 @@ function procesarReclamo(payload, ss) {
 function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
   var status = { admin: "No enviado", customer: "No enviado" };
   var adminEmail = CONFIG.ADMIN_EMAIL;
-  var customerEmail = payload.buyerEmail || "";
+  var customerEmail = (payload.buyerEmail || payload.email || payload.buyer_email || payload.customerEmail || payload.correo || "").toString().trim();
+
+  Logger.log("[GAS EMAIL] Destinatario Admin: " + adminEmail);
+  Logger.log("[GAS EMAIL] Destinatario Cliente: " + customerEmail);
 
   var productsRows = "";
   if (payload.items && payload.items.length > 0) {
@@ -294,7 +297,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
     "<div style='font-family: Arial, sans-serif; max-width: 650px; margin: 20px auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.08);'>" +
       "<div style='background: #a70025; color: white; padding: 24px; text-align: center; border-bottom: 4px solid #78001b;'>" +
         "<div style='font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fecaca; margin-bottom: 6px;'>SISTEMA DE VENTAS MAYORISTAS B2B</div>" +
-        "<h2 style='margin: 0; font-size: 22px; font-weight: 800;'>🔔 ¡NUEVA ORDEN DE COMPRA MAYORISTA!</h2>" +
+        "<h2 style='margin: 0; font-size: 22px; font-weight: 800;'>NUEVA ORDEN DE COMPRA MAYORISTA</h2>" +
         "<p style='margin: 6px 0 0; font-size: 14px; font-family: monospace;'>Orden ID: " + txId + "</p>" +
       "</div>" +
       "<div style='padding: 25px; color: #334155; line-height: 1.6; font-size: 14px;'>" +
@@ -305,7 +308,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
             "<tr><td style='padding: 4px 0; color:#64748b;'><strong>Cliente / Razón Social:</strong></td><td style='padding: 4px 0; font-weight:bold; color:#0f172a;'>" + (payload.buyerName || "") + "</td></tr>" +
             "<tr><td style='padding: 4px 0; color:#64748b;'><strong>RUC / DNI:</strong></td><td style='padding: 4px 0;'>" + (payload.buyerRuc || "") + "</td></tr>" +
             "<tr><td style='padding: 4px 0; color:#64748b;'><strong>WhatsApp / Teléfono:</strong></td><td style='padding: 4px 0; font-weight:bold; color:#059669;'>" + (payload.buyerPhone || "") + "</td></tr>" +
-            "<tr><td style='padding: 4px 0; color:#64748b;'><strong>Correo Electrónico:</strong></td><td style='padding: 4px 0;'>" + customerEmail + "</td></tr>" +
+            "<tr><td style='padding: 4px 0; color:#64748b;'><strong>Correo Electrónico:</strong></td><td style='padding: 4px 0; font-weight:bold; color:#1d4ed8;'>" + customerEmail + "</td></tr>" +
             "<tr><td style='padding: 4px 0; color:#64748b;'><strong>Modalidad Despacho:</strong></td><td style='padding: 4px 0;'>" + (payload.deliveryOption === "pickup" ? "Recojo en Almacén Magdalena" : "Envío Agencia: " + (payload.buyerAddress || "")) + "</td></tr>" +
           "</table>" +
         "</div>" +
@@ -337,40 +340,42 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
     "</div>";
  
   try {
-    GmailApp.sendEmail(adminEmail, "🔔 NUEVA ORDEN DE COMPRA MAYORISTA - " + txId + " (" + (payload.buyerName || "") + ")", "", {
+    GmailApp.sendEmail(adminEmail, "[NUEVA ORDEN B2B] Orden N° " + txId + " - " + (payload.buyerName || "Cliente"), "", {
       htmlBody: adminHtml,
       name: "Rosarios Peruanos Web",
       attachments: [pdfBlob]
     });
     status.admin = "Enviado OK (Gmail)";
   } catch(errAdmin) {
+    Logger.log("[GAS ADMIN GMAIL ERROR]: " + errAdmin.toString());
     try {
       MailApp.sendEmail({
         to: adminEmail,
-        subject: "🔔 NUEVA ORDEN DE COMPRA MAYORISTA - " + txId + " (" + (payload.buyerName || "") + ")",
+        subject: "[NUEVA ORDEN B2B] Orden N° " + txId + " - " + (payload.buyerName || "Cliente"),
         htmlBody: adminHtml,
         attachments: [pdfBlob]
       });
       status.admin = "Enviado OK (MailApp)";
     } catch(e) {
+      Logger.log("[GAS ADMIN MAILAPP ERROR]: " + e.toString());
       status.admin = "Error: " + e.toString();
     }
   }
  
   // Email para el cliente (correo ingresado en el formulario)
-  if (customerEmail && customerEmail.trim() !== "") {
+  if (customerEmail && customerEmail !== "") {
     var clientHtml = 
       "<div style='font-family: Arial, sans-serif; max-width: 650px; margin: 20px auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08);'>" +
         "<!-- Encabezado Membretado Corporativo -->" +
         "<div style='background: linear-gradient(135deg, #a70025 0%, #78001b 100%); color: white; padding: 28px 24px; text-align: center; border-bottom: 4px solid #500012;'>" +
           "<div style='font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #fecaca; margin-bottom: 8px;'>VENTA Y DISTRIBUCIÓN MAYORISTA DIRECTA EN PERÚ</div>" +
-          "<h1 style='margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 0.5px;'>🌸 ROSARIOS PERUANOS</h1>" +
+          "<h1 style='margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 0.5px;'>ROSARIOS PERUANOS</h1>" +
           "<p style='margin: 8px 0 0; font-size: 13px; opacity: 0.9;'>Administrado por: <strong>Somos Marketing Perú EIRL</strong> (RUC: 20615554384)</p>" +
         "</div>" +
  
         "<div style='padding: 30px 25px; color: #334155; line-height: 1.6; font-size: 14px;'>" +
           "<div style='background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #065f46;'>" +
-            "✅ <strong>¡Orden Registrada!</strong> Tu Orden N° <strong>" + txId + "</strong> ha ingresado a nuestro sistema." +
+            "✔ <strong>¡Orden Registrada!</strong> Tu Orden N° <strong>" + txId + "</strong> ha ingresado a nuestro sistema." +
           "</div>" +
  
           "<p style='font-size: 15px; color: #0f172a;'>Estimado/a <strong>" + (payload.buyerName || "") + "</strong>,</p>" +
@@ -388,6 +393,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
               "<tr><td style='padding: 3px 0; color: #64748b;'><strong>Cliente / Razón Social:</strong></td><td style='padding: 3px 0; font-weight: bold;'>" + (payload.buyerName || "") + "</td></tr>" +
               "<tr><td style='padding: 3px 0; color: #64748b;'><strong>RUC / DNI:</strong></td><td style='padding: 3px 0;'>" + (payload.buyerRuc || "") + "</td></tr>" +
               "<tr><td style='padding: 3px 0; color: #64748b;'><strong>Teléfono / WhatsApp:</strong></td><td style='padding: 3px 0; font-weight: bold; color: #059669;'>" + (payload.buyerPhone || "") + "</td></tr>" +
+              "<tr><td style='padding: 3px 0; color: #64748b;'><strong>Correo Electrónico:</strong></td><td style='padding: 3px 0; font-weight: bold; color: #1d4ed8;'>" + customerEmail + "</td></tr>" +
               "<tr><td style='padding: 3px 0; color: #64748b;'><strong>Modalidad de Entrega:</strong></td><td style='padding: 3px 0;'>" + (payload.deliveryOption === "pickup" ? "Recojo en Almacén (Magdalena del Mar, Lima)" : "Envío Agencia Nacional: " + (payload.buyerAddress || "")) + "</td></tr>" +
             "</table>" +
           "</div>" +
@@ -452,29 +458,35 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
       "</div>";
  
     try {
-      GmailApp.sendEmail(customerEmail, "🌸 Confirmación de Orden de Compra Mayorista - " + txId, "", {
+      GmailApp.sendEmail(customerEmail, "[CONFIRMACIÓN DE ORDEN] Tu Orden N° " + txId + " - Rosarios Peruanos", "", {
         htmlBody: clientHtml,
         name: "Rosarios Peruanos",
-        replyTo: adminEmail
+        replyTo: adminEmail,
+        attachments: [pdfBlob]
       });
       status.customer = "Enviado OK (Gmail)";
+      Logger.log("[GAS CLIENT EMAIL] Enviado exitosamente a " + customerEmail);
     } catch(errClient) {
+      Logger.log("[GAS CLIENT GMAIL ERROR]: " + errClient.toString());
       try {
         MailApp.sendEmail({
           to: customerEmail,
-          subject: "🌸 Confirmación de Orden de Compra Mayorista - " + txId,
+          subject: "[CONFIRMACIÓN DE ORDEN] Tu Orden N° " + txId + " - Rosarios Peruanos",
           htmlBody: clientHtml,
-          replyTo: adminEmail
+          replyTo: adminEmail,
+          attachments: [pdfBlob]
         });
         status.customer = "Enviado OK (MailApp)";
+        Logger.log("[GAS CLIENT MAILAPP] Enviado exitosamente a " + customerEmail);
       } catch(e) {
+        Logger.log("[GAS CLIENT MAILAPP ERROR]: " + e.toString());
         status.customer = "Error: " + e.toString();
       }
     }
   } else {
     status.customer = "No se envió (correo del cliente vacío)";
+    Logger.log("[GAS CLIENT EMAIL] OMITIDO: customerEmail está vacío");
   }
-
   return status;
 }
 
