@@ -115,7 +115,7 @@ let selectedQuantity = 500;
 let currentImageView = 'infographic'; // 'infographic' or 'photo'
 let deliveryOption = 'shipping';
 const SHIPPING_COST = 25.00;
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVTMlZ487Ti1UN1i8lMuO1WvUcPmL05yP4xKsGKKM4uEAPUJmVVqR7KOeKn0xw2N94/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxi-sqhnpRUu6V09OyBWtm6KWwr14JtkA-YWakFRr-e6UWGNHN6TAgQz3XtGxMkjhKm/exec';
 
 // ================= PRICING SCALE FUNCTION =================
 function getUnitPrice(totalUnits) {

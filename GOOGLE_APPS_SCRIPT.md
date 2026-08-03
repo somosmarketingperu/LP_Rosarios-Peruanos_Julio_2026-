@@ -18,7 +18,7 @@ Este archivo contiene el código oficial y la guía paso a paso de **Google Apps
    * **Ejecutar como:** `Yo (tu correo)`
    * **Quién tiene acceso:** `Cualquiera (Anyone)`
 11. Pegue esa URL en el archivo de configuración del frontend (`js/main.js` en la variable `APPS_SCRIPT_URL`).
-    * URL Actual Configurada: `https://script.google.com/macros/s/AKfycbyVTMlZ487Ti1UN1i8lMuO1WvUcPmL05yP4xKsGKKM4uEAPUJmVVqR7KOeKn0xw2N94/exec`
+    * URL Actual Configurada: `https://script.google.com/macros/s/AKfycbxi-sqhnpRUu6V09OyBWtm6KWwr14JtkA-YWakFRr-e6UWGNHN6TAgQz3XtGxMkjhKm/exec`
 
 ---
 
@@ -277,7 +277,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
     }).join("");
   }
 
-  var cancelUrl = "https://script.google.com/macros/s/AKfycbyVTMlZ487Ti1UN1i8lMuO1WvUcPmL05yP4xKsGKKM4uEAPUJmVVqR7KOeKn0xw2N94/exec?action=cancelOrder&orderId=" + encodeURIComponent(txId);
+  var cancelUrl = "https://script.google.com/macros/s/AKfycbxi-sqhnpRUu6V09OyBWtm6KWwr14JtkA-YWakFRr-e6UWGNHN6TAgQz3XtGxMkjhKm/exec?action=cancelOrder&orderId=" + encodeURIComponent(txId);
   var waUrl = "https://wa.me/51969654895?text=Hola%20Silvia%20Quispe,%20he%20generado%20mi%20Orden%20de%20Compra%20Mayorista%20N%C2%B0%20" + encodeURIComponent(txId);
 
   // Email para la administración (Silvia Quispe)
