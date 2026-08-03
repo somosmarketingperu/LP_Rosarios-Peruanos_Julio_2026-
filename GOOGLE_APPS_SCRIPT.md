@@ -44,32 +44,40 @@ var CONFIG = {
 
 function doPost(e) {
   if (e === undefined || !e.postData || !e.postData.contents) {
+    Logger.log("[GAS BACKEND - SOMOS MARKETING PERÚ] ❌ Petición recibida sin contenido válido");
     return responderJSON({ success: false, message: "No se recibieron datos válidos" });
   }
 
   try {
     var payload = JSON.parse(e.postData.contents);
+    Logger.log("[GAS BACKEND - SOMOS MARKETING PERÚ] 🚀 Petición POST recibida | Tipo: " + (payload.type || "pedido_mayorista") + " | Cliente: " + (payload.buyerName || payload.nombre || "Anónimo"));
     
     // Validar clave secreta si es enviada
     if (payload.secretKey && payload.secretKey !== CONFIG.SECRET_KEY) {
+      Logger.log("[GAS BACKEND] ⛔ Acceso denegado: Secret Key inválida");
       return responderJSON({ success: false, message: "Acceso no autorizado" });
     }
 
     var ss = obtenerOSistemaSpreadsheet();
     if (!ss) {
+      Logger.log("[GAS BACKEND] ❌ Error accediendo a Google Sheets");
       return responderJSON({ success: false, message: "No se pudo acceder a Google Sheets" });
     }
 
     // Identificar el tipo de solicitud
     if (payload.type === "claim" || payload.isClaim) {
+      Logger.log("[GAS BACKEND] 📑 Procesando Reclamación INDECOPI...");
       return procesarReclamo(payload, ss);
     } else if (payload.type === "cancelOrder" || payload.action === "cancelOrder") {
+      Logger.log("[GAS BACKEND] 🚫 Procesando Cancelación de Orden N° " + payload.orderId);
       return procesarCancelacionPedido(payload, ss);
     } else {
+      Logger.log("[GAS BACKEND] 📦 Procesando Pedido Mayorista N° " + payload.orderId);
       return procesarPedidoMayorista(payload, ss);
     }
 
   } catch (error) {
+    Logger.log("[GAS BACKEND] 💥 Error en la ejecución: " + error.toString());
     return responderJSON({ success: false, message: "Error interno: " + error.toString() });
   }
 }
