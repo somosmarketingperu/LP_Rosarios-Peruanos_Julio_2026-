@@ -130,7 +130,7 @@ function getUnitPrice(totalUnits) {
 
 // ================= NAVIGATION =================
 function navigateTo(pageId) {
-  const pages = ['inicio', 'tienda', 'sobre-nosotros', 'checkout'];
+  const pages = ['inicio', 'tienda', 'sobre-nosotros', 'checkout', 'consulta-pago'];
   
   pages.forEach(p => {
     const el = document.getElementById('page-' + p);
@@ -1326,6 +1326,7 @@ async function handleLookupSubmit(e) {
 }
 
 async function lookupAndRenderConfirmedOrder(orderId, doc) {
+  navigateTo('consulta-pago');
   const msgEl = document.getElementById('lookup-status-msg');
   if (msgEl) {
     msgEl.style.display = 'block';
@@ -1376,17 +1377,19 @@ async function lookupAndRenderConfirmedOrder(orderId, doc) {
 }
 
 function renderConfirmedPaymentCard(o) {
-  const container = document.getElementById('checkout-table-container');
+  const container = document.getElementById('confirmed-order-render-area') || document.getElementById('checkout-table-container');
   if (!container) return;
 
-  const driveBtn = o.driveUrl ? `<a href="${o.driveUrl}" target="_blank" class="btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;">📄 Abrir PDF en Google Drive</a>` : '';
+  const driveBtn = o.driveUrl ? `<a href="${o.driveUrl}" target="_blank" class="btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem; background: #e2e8f0; color: #1e293b; border: 1px solid #cbd5e1; text-decoration: none; border-radius: 6px; font-weight: 700;">📄 Abrir PDF Oficial en Drive</a>` : '';
+  const wspNotifyMsg = encodeURIComponent(`Hola Silvia, adjunto constancia de pago para mi *Orden N° ${o.orderId}* por el monto final de S/. ${o.grandTotal.toFixed(2)}.`);
+  const wspNotifyUrl = `https://wa.me/51969654895?text=${wspNotifyMsg}`;
 
   container.innerHTML = `
     <div style="background: white; border: 2px solid #2563eb; border-radius: var(--radius-xl); padding: 2rem 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
           <span style="background: #2563eb; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 800; font-size: 0.75rem; font-family: var(--font-mono);">
-            ESTADO: ${o.status || 'CONFIRMADO POR ALMACÉN'}
+            ESTADO: ${o.status || 'STOCK CONFIRMADO POR ALMACÉN'}
           </span>
           <h2 class="font-display" style="font-size: 1.6rem; font-weight: 900; color: var(--text-dark); margin-top: 0.5rem;">
             Ficha de Pago — Orden N° ${o.orderId}
@@ -1407,7 +1410,7 @@ function renderConfirmedPaymentCard(o) {
       </div>
 
       <!-- Resumen Financiero Actualizado -->
-      <div style="background: #eff6ff; border: 2px solid #bfdbfe; border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; text-align: center;">
+      <div style="background: #eff6ff; border: 2px solid #bfdbfe; border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; text-align: center;">
         <div>
           <span style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 700;">Unidades Finales</span>
           <div style="font-size: 1.3rem; font-weight: 900; color: #1e3a8a;">${o.totalUnits.toLocaleString()} u</div>
@@ -1426,11 +1429,14 @@ function renderConfirmedPaymentCard(o) {
         </div>
       </div>
 
-      <!-- Indicación de pago Izipay -->
-      <div style="text-align: center;">
-        <p style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 1rem;">
-          💳 <strong>Complete su pago seguro con Izipay (Tarjeta Crédito/Débito) o Transferencia por el monto exacto de S/. ${o.grandTotal.toFixed(2)}:</strong>
+      <!-- Indicación y Botones de Pago / Notificación -->
+      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+        <p style="font-size: 0.85rem; color: var(--text-gray); font-weight: 600;">
+          💳 Complete su pago seguro con Izipay (Tarjeta Crédito/Débito) o realice la transferencia bancaria por <strong>S/. ${o.grandTotal.toFixed(2)}</strong>:
         </p>
+        <a href="${wspNotifyUrl}" target="_blank" class="btn-primary" style="background: #25D366; color: white; padding: 0.75rem 1.5rem; font-size: 0.9rem; font-weight: 800; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(37,211,102,0.3);">
+          💬 Notificar Pago Realizado a Silvia por WhatsApp →
+        </a>
       </div>
     </div>
   `;
@@ -1439,8 +1445,7 @@ function renderConfirmedPaymentCard(o) {
   updateTotalsSummaryConfirmed(o);
 
   // Scroll suave hacia la ficha de pago
-  const checkoutSection = document.getElementById('page-checkout');
-  if (checkoutSection) checkoutSection.scrollIntoView({ behavior: 'smooth' });
+  container.scrollIntoView({ behavior: 'smooth' });
 }
 
 function updateTotalsSummaryConfirmed(o) {
@@ -1554,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const lookupDoc = document.getElementById('lookup-ord-doc');
               if (lookupDoc) lookupDoc.value = docParam.trim();
             }
-            navigateTo('checkout');
+            navigateTo('consulta-pago');
             lookupAndRenderConfirmedOrder(orderIdParam, docParam || '');
           }
         } else if (actionParam === 'cancelOrder' || actionParam === 'anular' || orderIdParam) {

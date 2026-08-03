@@ -79,6 +79,7 @@
         <button id="nav-btn-tienda" onclick="window.app.navigateTo('tienda')" class="nav-btn">Catálogo Mayorista</button>
         <button id="nav-btn-sobre-nosotros" onclick="window.app.navigateTo('sobre-nosotros')" class="nav-btn">Silvia Quispe</button>
         <button id="nav-btn-checkout" onclick="window.app.navigateTo('checkout')" class="nav-btn nav-btn-checkout">Generar Pedido</button>
+        <button id="nav-btn-consulta-pago" onclick="window.app.navigateTo('consulta-pago')" class="nav-btn" style="background-color: #2563eb; color: #ffffff; border-radius: 20px; padding: 0.4rem 0.9rem; font-weight: 700;">💳 Consulta / Paga Online</button>
         <a id="nav-btn-wsp-return" href="https://wa.me/51969654895" target="_blank" class="nav-btn" style="background-color: #25D366; color: #ffffff; border-radius: 20px; padding: 0.4rem 0.9rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;">💬 Volver a WhatsApp</a>
       </nav>
 
@@ -108,6 +109,7 @@
       <button id="mob-btn-tienda" onclick="window.app.navigateTo('tienda')" class="mobile-nav-link">Catálogo de Colores</button>
       <button id="mob-btn-sobre-nosotros" onclick="window.app.navigateTo('sobre-nosotros')" class="mobile-nav-link">Silvia Quispe (Sobre Nosotros)</button>
       <button id="mob-btn-checkout" onclick="window.app.navigateTo('checkout')" class="mobile-nav-link" style="color: var(--secondary); font-weight: 700;">Generar Pedido</button>
+      <button id="mob-btn-consulta-pago" onclick="window.app.navigateTo('consulta-pago')" class="mobile-nav-link" style="color: #2563eb; font-weight: 700;">💳 Consulta / Paga Online</button>
       <a id="mob-btn-wsp-return" href="https://wa.me/51969654895" target="_blank" class="mobile-nav-link" style="color: #25D366; font-weight: 700; text-decoration: none;">💬 Volver a WhatsApp</a>
     </div>
   </header>
@@ -515,26 +517,7 @@
           <h2 class="font-display" style="font-size: 2.25rem; font-weight: 800; margin-top: 0.5rem;">Generación de Orden de Compra Mayorista</h2>
           <p style="color: var(--text-gray); font-size: 0.95rem; max-width: 650px; margin: 0.25rem auto 0;">
             Debido a la alta rotación de inventario en almacén, verifique su cotización, genere su <strong>Orden de Compra (Dossier PDF)</strong> y solicite la confirmación de stock antes de realizar el pago.
-        <!-- CARD DE BÚSQUEDA Y PAGO DE ORDEN CONFIRMADA POR CHATBOT / ALMACÉN -->
-        <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 2px solid #2563eb; border-radius: var(--radius-xl); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.5rem; color: #1e40af; font-weight: 800; font-size: 1.05rem;">
-                <span>💳</span> ¿Tienes una Orden Confirmada por WhatsApp o Chatbot?
-              </div>
-              <p style="font-size: 0.82rem; color: #1e3a8a; margin: 0.25rem 0 0 0; font-weight: 500;">
-                Ingresa tu <strong>N° de Orden</strong> y tu <strong>DNI / RUC</strong> para cargar tu ficha con el monto final actualizado por almacén y pagar con <strong>Izipay</strong> o Transferencia.
-              </p>
-            </div>
-            <form onsubmit="window.app.handleLookupSubmit(event)" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-              <input type="text" id="lookup-ord-id" placeholder="Ej: RP-2026-3500" required style="padding: 0.65rem 0.85rem; border: 1px solid #93c5fd; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 0.85rem; width: 145px; text-transform: uppercase;" />
-              <input type="text" id="lookup-ord-doc" placeholder="DNI / RUC (Opcional)" style="padding: 0.65rem 0.85rem; border: 1px solid #93c5fd; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 0.85rem; width: 145px;" />
-              <button type="submit" class="btn-primary" style="background: #2563eb; padding: 0.65rem 1.1rem; font-size: 0.85rem; font-weight: 800; white-space: nowrap;">
-                🔎 Cargar Ficha de Pago
-              </button>
-            </form>
-          </div>
-          <div id="lookup-status-msg" style="display: none; margin-top: 0.75rem; font-size: 0.85rem; font-weight: 700; text-align: center; padding: 0.5rem; border-radius: var(--radius-md);"></div>
+          </p>
         </div>
 
         <!-- Order Progress Bar (Barra de Progreso) -->
@@ -730,6 +713,66 @@
 
           </div>
 
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 5: CONSULTA & PAGO ONLINE DE ORDEN CONFIRMADA -->
+    <section id="page-consulta-pago" class="page-section">
+      <div class="container-custom" style="padding: 3rem 1rem;">
+        
+        <div style="margin-bottom: 2rem; text-align: center;">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: #2563eb; background: #dbeafe; padding: 0.25rem 0.85rem; border-radius: 9999px; text-transform: uppercase;">MÓDULO OFICIAL DE CONSULTA & PAGO EN LÍNEA</span>
+          <h2 class="font-display" style="font-size: 2.25rem; font-weight: 800; margin-top: 0.5rem;">Consulta de Orden & Pago Online (Izipay)</h2>
+          <p style="color: var(--text-gray); font-size: 0.95rem; max-width: 680px; margin: 0.25rem auto 0; line-height: 1.5;">
+            Si ya generó su Orden de Compra y el almacén/chatbot confirmó el stock disponible, ingrese aquí su N° de Orden y DNI/RUC para visualizar la ficha de pago actualizada y abonar de forma segura.
+          </p>
+        </div>
+
+        <!-- BUSCADOR ESQUEMATIZADO PREMIUM -->
+        <div style="background: white; border: 2px solid #2563eb; border-radius: var(--radius-xl); padding: 1.75rem 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-md); max-width: 800px; margin-left: auto; margin-right: auto;">
+          <h3 class="font-display" style="font-size: 1.15rem; font-weight: 800; color: #1e3a8a; margin-bottom: 1rem; border-bottom: 1px solid #dbeafe; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🔍</span> Buscador de Orden de Compra Confirmada
+          </h3>
+
+          <form onsubmit="window.app.handleLookupSubmit(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+            <div>
+              <label style="font-weight: 700; font-size: 0.8rem; display: block; margin-bottom: 0.35rem; color: var(--text-dark);">N° de Orden de Compra *</label>
+              <input type="text" id="lookup-ord-id" placeholder="Ej: RP-2026-3500" required style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #93c5fd; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 0.9rem; text-transform: uppercase; background: #f8fafc;" />
+            </div>
+
+            <div>
+              <label style="font-weight: 700; font-size: 0.8rem; display: block; margin-bottom: 0.35rem; color: var(--text-dark);">DNI / RUC Registrado</label>
+              <input type="text" id="lookup-ord-doc" placeholder="Ej: 20615554384" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #93c5fd; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 0.9rem; background: #f8fafc;" />
+            </div>
+
+            <div>
+              <button type="submit" class="btn-primary" style="background: #2563eb; width: 100%; padding: 0.7rem; font-size: 0.9rem; font-weight: 800; justify-content: center;">
+                🔎 Cargar Ficha de Pago
+              </button>
+            </div>
+          </form>
+
+          <div id="lookup-status-msg" style="display: none; margin-top: 1rem; font-size: 0.85rem; font-weight: 700; text-align: center; padding: 0.65rem; border-radius: var(--radius-md);"></div>
+        </div>
+
+        <!-- ÁREA DONDE SE RENDERIZA LA FICHA DE PAGO Y DETALLE CONFIRMADO DE ALMACÉN -->
+        <div id="confirmed-order-render-area" style="max-width: 850px; margin: 0 auto;">
+          <!-- Carga dinámicamente la Ficha de Pago con Izipay y PDF -->
+        </div>
+
+        <!-- SECCIÓN DE CANCELACIÓN RÁPIDA DE ORDEN ONLINE -->
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-xl); padding: 1.5rem; max-width: 800px; margin: 3rem auto 0; text-align: center;">
+          <h4 style="font-weight: 800; font-size: 0.95rem; color: #991b1b; margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+            <span>🚫</span> ¿Necesitas Anular o Cancelar una Orden Registrada?
+          </h4>
+          <p style="font-size: 0.8rem; color: #7f1d1d; margin-bottom: 1rem; max-width: 580px; margin-left: auto; margin-right: auto;">
+            Si generaste una Orden y deseas anularla en nuestra Hoja de Cálculo de Google antes de pagar, puedes cancelarla directamente aquí.
+          </p>
+          <button type="button" onclick="window.app.openCancelOrderModal()" class="btn-secondary" style="background: #dc2626; color: white; border: none; padding: 0.65rem 1.25rem; font-size: 0.8rem; border-radius: var(--radius-md); font-weight: 800; cursor: pointer;">
+            🚫 Anular Pedido en Sistema de Google
+          </button>
         </div>
 
       </div>
