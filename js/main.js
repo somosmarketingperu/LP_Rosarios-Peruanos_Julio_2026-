@@ -675,7 +675,6 @@ async function executeOrderSubmit(payload) {
       // Limpiar cotización localmente
       cart = [];
       localStorage.setItem('rp_cart_v1', JSON.stringify(cart));
-      if (typeof renderCartMatrix === 'function') renderCartMatrix();
       updateCartBadge();
       
       // WhatsApp Click setup
@@ -689,6 +688,10 @@ async function executeOrderSubmit(payload) {
         `Solicito confirmación física de stock en almacén para proceder con la transferencia a la Cuenta Corriente de Somos Marketing Perú EIRL o Izipay.`;
       const waUrl = `https://wa.me/51969654895?text=${waMessage}`;
       
+      // 1. Mostrar Banner de Éxito Persistente en la página de Checkout
+      renderCheckoutSuccessBanner(payload, waUrl);
+
+      // 2. Abrir Modal de Éxito con derivación directa al Chatbot de WhatsApp
       openOrderSuccessModal(payload, waUrl);
     } else {
       throw new Error(json.message || "Error desconocido devuelto por el servidor.");
@@ -731,6 +734,42 @@ function retryOrderSubmit() {
   }
 }
 
+// ── BANNER DE ÉXITO PERSISTENTE EN PÁGINA ──
+function renderCheckoutSuccessBanner(orderData, waUrl) {
+  const container = document.getElementById('checkout-table-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: var(--radius-xl); padding: 2rem 1.5rem; text-align: center; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(34,197,94,0.15);">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+      <span style="background: #15803d; color: white; padding: 0.3rem 0.9rem; border-radius: 9999px; font-weight: 800; font-size: 0.78rem; text-transform: uppercase; font-family: var(--font-mono);">
+        ORDEN GENERADA CON ÉXITO — N° ${orderData.orderId}
+      </span>
+      <h2 class="font-display" style="font-size: 1.75rem; font-weight: 900; color: #14532d; margin-top: 0.75rem; margin-bottom: 0.5rem;">
+        ¡Su Orden de Compra ha sido registrada y guardada!
+      </h2>
+      <p style="color: #166534; font-size: 0.95rem; max-width: 640px; margin: 0 auto 1.5rem; line-height: 1.5; font-weight: 600;">
+        El PDF oficial ha sido descargado en su dispositivo y enviado a su correo.<br>
+        👉 <strong>PASO FINAL OBLIGATORIO:</strong> Confirme el stock disponible en almacén con Silvia Quispe por WhatsApp para autorizar su despacho y pago.
+      </p>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+        <a href="${waUrl}" target="_blank" class="btn-primary" style="background: #16a34a; font-size: 1.1rem; font-weight: 900; padding: 1rem 2rem; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.65rem; box-shadow: 0 4px 15px rgba(22,163,74,0.35);">
+          💬 HABLAR CON LA ADMINISTRADORA VÍA WHATSAPP Y CONFIRMAR STOCK →
+        </a>
+        <span style="font-size: 0.8rem; color: #15803d; font-weight: 700;">
+          📲 Se abrirá WhatsApp con los datos de su Orden N° ${orderData.orderId} listos para enviar al Chatbot.
+        </span>
+      </div>
+    </div>
+  `;
+
+  // Scroll suave hacia el banner de confirmación
+  const checkoutSection = document.getElementById('page-checkout');
+  if (checkoutSection) {
+    checkoutSection.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
 let lastGeneratedOrderPayload = null;
 let waRedirectTimer = null;
 
@@ -758,6 +797,7 @@ function openOrderSuccessModal(orderData, waUrl) {
     };
   }
 
+  modal.style.display = 'flex';
   modal.classList.add('active');
 
   // Redirección automática progresiva en 5 segundos a WhatsApp Chatbot
@@ -782,7 +822,10 @@ function closeOrderSuccessModal() {
     waRedirectTimer = null;
   }
   const modal = document.getElementById('order-success-modal');
-  if (modal) modal.classList.remove('active');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  }
 }
 
 function redownloadOrderPDF() {
