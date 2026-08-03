@@ -1062,6 +1062,32 @@ function renderShopCartMatrix() {
   `;
 }
 
+// Alternar vista de foto de Silvia (Real / Arte)
+function setSilviaView(viewType) {
+  const realBox = document.getElementById('silvia-img-real-box');
+  const artImg = document.getElementById('silvia-img-art');
+  const btnReal = document.getElementById('toggle-photo-real');
+  const btnArt = document.getElementById('toggle-photo-art');
+
+  if (!realBox || !artImg || !btnReal || !btnArt) return;
+
+  if (viewType === 'real') {
+    realBox.style.display = 'block';
+    artImg.style.display = 'none';
+    btnReal.style.background = 'var(--primary)';
+    btnReal.style.color = 'white';
+    btnArt.style.background = 'transparent';
+    btnArt.style.color = 'var(--text-gray)';
+  } else {
+    realBox.style.display = 'none';
+    artImg.style.display = 'block';
+    btnArt.style.background = 'var(--primary)';
+    btnArt.style.color = 'white';
+    btnReal.style.background = 'transparent';
+    btnReal.style.color = 'var(--text-gray)';
+  }
+}
+
 // Global App Namespace
 window.app = {
   navigateTo,
@@ -1081,7 +1107,8 @@ window.app = {
   closeClaimsModal,
   openCancelOrderModal,
   closeCancelOrderModal,
-  submitCancelOrderForm
+  submitCancelOrderForm,
+  setSilviaView
 };
 
 // Initialization on Ready
