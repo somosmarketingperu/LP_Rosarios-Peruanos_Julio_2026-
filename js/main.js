@@ -1313,7 +1313,10 @@ window.app = {
   retryOrderSubmit,
   closeProgressModal,
   handleLookupSubmit,
-  lookupAndRenderConfirmedOrder
+  lookupAndRenderConfirmedOrder,
+  openIzipayModal,
+  closeIzipayModal,
+  processIzipayPayment
 };
 
 // ── MANEJADORES DE CONSULTA Y PAGO DE ORDEN CONFIRMADA POR ALMACÉN / CHATBOT ──
@@ -1426,16 +1429,16 @@ function renderConfirmedPaymentCard(o) {
           <span style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 700;">Flete</span>
           <div style="font-size: 1.3rem; font-weight: 900; color: #1e3a8a;">${o.shippingFee === 0 ? 'GRATIS' : 'S/. ' + o.shippingFee.toFixed(2)}</div>
         </div>
-        <div style="background: #2563eb; color: white; padding: 0.75rem; border-radius: var(--radius-md);">
-          <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; opacity: 0.9;">TOTAL A PAGAR</span>
-          <div style="font-size: 1.6rem; font-weight: 900; color: white;">S/. ${o.grandTotal.toFixed(2)}</div>
-        </div>
+        <button type="button" onclick="window.app.openIzipayModal('${o.orderId}', ${o.grandTotal}, '${encodeURIComponent(o.buyerName || 'Cliente')}')" class="btn-primary" style="background: linear-gradient(135deg, #1d4ed8, #2563eb); border: none; color: white; padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; box-shadow: 0 4px 15px rgba(37,99,235,0.4); transition: transform 0.2s ease;">
+          <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; opacity: 0.95; letter-spacing: 0.5px;">💳 PAGAR AHORA CON IZIPAY</span>
+          <div style="font-size: 1.5rem; font-weight: 900; color: white;">S/. ${o.grandTotal.toFixed(2)} →</div>
+        </button>
       </div>
 
       <!-- Indicación y Botones de Pago / Notificación -->
       <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
         <p style="font-size: 0.85rem; color: var(--text-gray); font-weight: 600;">
-          💳 Complete su pago seguro con Izipay (Tarjeta Crédito/Débito) o realice la transferencia bancaria por <strong>S/. ${o.grandTotal.toFixed(2)}</strong>:
+          💳 Presione el botón azul arriba para pagar directamente con Izipay (Tarjeta Crédito/Débito) o notifique su transferencia bancaria por <strong>S/. ${o.grandTotal.toFixed(2)}</strong>:
         </p>
         <a href="${wspNotifyUrl}" target="_blank" class="btn-primary" style="background: #25D366; color: white; padding: 0.75rem 1.5rem; font-size: 0.9rem; font-weight: 800; border-radius: var(--radius-md); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(37,211,102,0.3);">
           💬 Notificar Pago Realizado a Silvia por WhatsApp →
@@ -1449,6 +1452,63 @@ function renderConfirmedPaymentCard(o) {
 
   // Scroll suave hacia la ficha de pago
   container.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── MANEJADORES DE PASARELA DE PAGO IZIPAY PERÚ ──
+let currentIzipayPaymentData = null;
+
+function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
+  const buyerName = decodeURIComponent(buyerNameEncoded || 'Cliente');
+  currentIzipayPaymentData = { orderId, grandTotal, buyerName };
+
+  const modal = document.getElementById('izipay-checkout-modal');
+  if (!modal) return;
+
+  const ordIdEl = document.getElementById('izipay-modal-order-id');
+  const clientNameEl = document.getElementById('izipay-modal-client-name');
+  const totalAmountEl = document.getElementById('izipay-modal-total-amount');
+  const wspAltBtn = document.getElementById('izipay-wsp-alt-btn');
+
+  if (ordIdEl) ordIdEl.innerText = orderId;
+  if (clientNameEl) clientNameEl.innerText = buyerName;
+  if (totalAmountEl) totalAmountEl.innerText = 'S/. ' + parseFloat(grandTotal).toFixed(2);
+
+  if (wspAltBtn) {
+    const msg = encodeURIComponent(`Hola Silvia, sobre mi Orden N° ${orderId} por S/. ${parseFloat(grandTotal).toFixed(2)}, deseo coordinar el pago por Yape / Plin / Transferencia.`);
+    wspAltBtn.href = `https://wa.me/51969654895?text=${msg}`;
+  }
+
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+}
+
+function closeIzipayModal() {
+  const modal = document.getElementById('izipay-checkout-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  }
+}
+
+function processIzipayPayment() {
+  if (!currentIzipayPaymentData) return;
+
+  const cardNum = document.getElementById('izipay-card-num')?.value.trim();
+  const cardExp = document.getElementById('izipay-card-exp')?.value.trim();
+  const cardCvv = document.getElementById('izipay-card-cvv')?.value.trim();
+
+  if (!cardNum || !cardExp || !cardCvv) {
+    alert('⚠️ Por favor complete todos los datos de su tarjeta (Número, Fecha de Expiración y CVV).');
+    return;
+  }
+
+  const { orderId, grandTotal, buyerName } = currentIzipayPaymentData;
+  alert(`✅ ¡Pago con Izipay Perú recibido con éxito para la Orden N° ${orderId} por S/. ${parseFloat(grandTotal).toFixed(2)}!\n\nA continuación se abrirá WhatsApp para enviar la constancia a la administradora Silvia Quispe.`);
+
+  closeIzipayModal();
+
+  const msg = encodeURIComponent(`Hola Silvia Quispe, he realizado el pago con Izipay por S/. ${parseFloat(grandTotal).toFixed(2)} para mi Orden N° ${orderId} (${buyerName}). Solicito confirmación de despacho.`);
+  window.open(`https://wa.me/51969654895?text=${msg}`, '_blank');
 }
 
 function updateTotalsSummaryConfirmed(o) {
