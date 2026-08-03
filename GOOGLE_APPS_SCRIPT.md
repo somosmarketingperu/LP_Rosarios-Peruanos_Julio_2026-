@@ -447,8 +447,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
       GmailApp.sendEmail(customerEmail, "🌸 Confirmación de Orden de Compra Mayorista - " + txId, "", {
         htmlBody: clientHtml,
         name: "Rosarios Peruanos",
-        replyTo: adminEmail,
-        attachments: [pdfBlob]
+        replyTo: adminEmail
       });
       status.customer = "Enviado OK (Gmail)";
     } catch(errClient) {
@@ -457,8 +456,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
           to: customerEmail,
           subject: "🌸 Confirmación de Orden de Compra Mayorista - " + txId,
           htmlBody: clientHtml,
-          replyTo: adminEmail,
-          attachments: [pdfBlob]
+          replyTo: adminEmail
         });
         status.customer = "Enviado OK (MailApp)";
       } catch(e) {
