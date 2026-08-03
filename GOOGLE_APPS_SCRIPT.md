@@ -124,9 +124,9 @@ function procesarPedidoMayorista(payload, ss) {
     sheet.appendRow([
       "Fecha", "Transacción ID", "Cliente", "DNI/RUC", "Celular", "Correo", 
       "Entrega", "Dirección", "Cant Total", "Precio Unit", "Subtotal (S/.)", 
-      "IGV (S/.)", "Envío (S/.)", "Total (S/.)", "PDF Orden Compra", "Productos"
+      "IGV (S/.)", "Envío (S/.)", "Total (S/.)", "PDF Orden Compra", "Productos", "Estado Envíos"
     ]);
-    sheet.getRange(1, 1, 1, 16).setFontWeight("bold").setBackground("#a70025").setFontColor("white").setHorizontalAlignment("center");
+    sheet.getRange(1, 1, 1, 17).setFontWeight("bold").setBackground("#a70025").setFontColor("white").setHorizontalAlignment("center");
   }
 
   var itemsText = "";
@@ -150,6 +150,9 @@ function procesarPedidoMayorista(payload, ss) {
   archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   var driveUrl = "https://drive.google.com/file/d/" + archivo.getId() + "/view?usp=sharing";
 
+  // Enviar correos y obtener el estado del envío para diagnóstico
+  var envioStatus = enviarCorreosPedido(payload, txId, driveUrl, pdfBlob);
+
   sheet.appendRow([
     now,
     txId,
@@ -166,13 +169,11 @@ function procesarPedidoMayorista(payload, ss) {
     payload.shippingFee || 0,
     payload.grandTotal || 0,
     driveUrl,
-    itemsText
+    itemsText,
+    "Admin: " + envioStatus.admin + " | Cliente: " + envioStatus.customer
   ]);
 
-  try { sheet.autoResizeColumns(1, 16); } catch(colErr) {}
-
-  // Enviar correos por Gmail
-  enviarCorreosPedido(payload, txId, driveUrl, pdfBlob);
+  try { sheet.autoResizeColumns(1, 17); } catch(colErr) {}
 
   return responderJSON({ success: true, message: "Pedido registrado con éxito", driveUrl: driveUrl });
 }
@@ -258,6 +259,7 @@ function procesarReclamo(payload, ss) {
  * Envió de alertas por correo con PDF adjunto y enlace a Drive
  */
 function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
+  var status = { admin: "No enviado", customer: "No enviado" };
   var adminEmail = CONFIG.ADMIN_EMAIL;
   var customerEmail = payload.buyerEmail || "";
 
@@ -303,7 +305,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
         "<div style='text-align:center; margin:20px 0;'>" +
           "<a href='" + driveUrl + "' target='_blank' style='background:#1e293b; color:white; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:700; font-size:13px; display:inline-block;'>📄 Abrir PDF de la Orden en Google Drive</a>" +
         "</div>" +
-
+ 
         "<h3 style='color: #a70025; font-size: 15px; border-bottom: 2px solid #a70025; padding-bottom: 6px; margin: 20px 0 10px;'>📦 Detalle de Productos Solicitados</h3>" +
         "<table style='width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;'>" +
           "<thead><tr style='background: #f1f5f9; color: #475569; text-align: left;'><th style='padding:8px;'>Producto</th><th style='padding:8px; text-align:center;'>Cant.</th><th style='padding:8px; text-align:right;'>P. Unit</th><th style='padding:8px; text-align:right;'>Subtotal</th></tr></thead>" +
@@ -324,13 +326,14 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
         "</p>" +
       "</div>" +
     "</div>";
-
+ 
   try {
     GmailApp.sendEmail(adminEmail, "🔔 NUEVA ORDEN DE COMPRA MAYORISTA - " + txId + " (" + (payload.buyerName || "") + ")", "", {
       htmlBody: adminHtml,
       name: "Rosarios Peruanos Web",
       attachments: [pdfBlob]
     });
+    status.admin = "Enviado OK (Gmail)";
   } catch(errAdmin) {
     try {
       MailApp.sendEmail({
@@ -339,9 +342,12 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
         htmlBody: adminHtml,
         attachments: [pdfBlob]
       });
-    } catch(e) {}
+      status.admin = "Enviado OK (MailApp)";
+    } catch(e) {
+      status.admin = "Error: " + e.toString();
+    }
   }
-
+ 
   // Email para el cliente (correo ingresado en el formulario)
   if (customerEmail && customerEmail.trim() !== "") {
     var clientHtml = 
@@ -352,20 +358,20 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
           "<h1 style='margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 0.5px;'>🌸 ROSARIOS PERUANOS</h1>" +
           "<p style='margin: 8px 0 0; font-size: 13px; opacity: 0.9;'>Administrado por: <strong>Somos Marketing Perú EIRL</strong> (RUC: 20615554384)</p>" +
         "</div>" +
-
+ 
         "<div style='padding: 30px 25px; color: #334155; line-height: 1.6; font-size: 14px;'>" +
           "<div style='background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #065f46;'>" +
             "✅ <strong>¡Orden Registrada!</strong> Tu Orden N° <strong>" + txId + "</strong> ha ingresado a nuestro sistema." +
           "</div>" +
-
+ 
           "<p style='font-size: 15px; color: #0f172a;'>Estimado/a <strong>" + (payload.buyerName || "") + "</strong>,</p>" +
           "<p style='color: #475569;'>Agradecemos tu preferencia. Tu Orden de Compra Mayorista se ha generado correctamente. Se ha adjuntado una copia del PDF oficial a este correo. También puedes visualizarlo y descargarlo directamente desde Google Drive:</p>" +
-
+ 
           "<!-- Ver PDF en Drive -->" +
           "<div style='text-align:center; margin:22px 0;'>" +
             "<a href='" + driveUrl + "' target='_blank' style='background: #a70025; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(167, 0, 37, 0.3);'>📄 Ver mi Orden de Compra en Google Drive</a>" +
           "</div>" +
-
+ 
           "<!-- Ficha de Datos del Cliente -->" +
           "<div style='background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px;'>" +
             "<div style='font-weight: 800; color: #1e293b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;'>📋 DATOS DE FACTURACIÓN Y DESPACHO</div>" +
@@ -376,7 +382,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
               "<tr><td style='padding: 3px 0; color: #64748b;'><strong>Modalidad de Entrega:</strong></td><td style='padding: 3px 0;'>" + (payload.deliveryOption === "pickup" ? "Recojo en Almacén (Magdalena del Mar, Lima)" : "Envío Agencia Nacional: " + (payload.buyerAddress || "")) + "</td></tr>" +
             "</table>" +
           "</div>" +
-
+ 
           "<!-- Tabla Desglose de Productos -->" +
           "<h3 style='color: #a70025; font-size: 15px; font-weight: 800; border-bottom: 2px solid #a70025; padding-bottom: 6px; margin: 25px 0 12px;'>📦 DETALLE DE ROSARIOS SOLICITADOS</h3>" +
           "<table style='width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;'>" +
@@ -392,14 +398,14 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
               productsRows +
             "</tbody>" +
           "</table>" +
-
+ 
           "<!-- Resumen Financiero -->" +
           "<div style='background: #fdf2f2; border: 1px solid #fecaca; padding: 18px; border-radius: 8px; margin-bottom: 25px; text-align: right;'>" +
             "<div style='font-size: 13px; color: #475569;'>Cantidad Total Unidades: <strong>" + (payload.totalUnits || 0) + " u</strong></div>" +
             "<div style='font-size: 13px; color: #475569;'>Subtotal: S/. " + (payload.subtotal || 0).toFixed(2) + " | Flete: " + (payload.shippingFee === 0 ? "GRATIS" : "S/. " + payload.shippingFee.toFixed(2)) + "</div>" +
             "<div style='font-size: 20px; font-weight: 900; color: #a70025; margin-top: 6px;'>TOTAL A PAGAR: S/. " + (payload.grandTotal || 0).toFixed(2) + "</div>" +
           "</div>" +
-
+ 
           "<!-- Cuentas Bancarias -->" +
           "<div style='background: #f0fdf4; border: 1px solid #bbf7d0; padding: 18px; border-radius: 8px; margin-bottom: 25px; font-size: 13px; color: #166534;'>" +
             "<strong style='font-size: 14px; text-transform: uppercase; color: #15803d;'>💳 CUENTAS BANCARIAS OFICIALES PARA TRANSFERENCIA:</strong>" +
@@ -410,7 +416,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
               "<li><strong>Yape / Plin / Izipay:</strong> (+51) 969 654 895</li>" +
             "</ul>" +
           "</div>" +
-
+ 
           "<!-- Botones de Acción -->" +
           "<div style='text-align: center; margin: 30px 0 20px; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center;'>" +
             "<a href='" + waUrl + "' target='_blank' style='background: #10b981; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);'>" +
@@ -421,7 +427,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
             "</a></div>" +
           "</div>" +
         "</div>" +
-
+ 
         "<!-- Pie de Página Leyes & Confidencialidad -->" +
         "<div style='background: #f8fafc; padding: 20px 25px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.5; text-align: center;'>" +
           "<strong style='color: #334155; font-size: 12px;'>ROSARIOS PERUANOS & SOMOS MARKETING PERÚ EIRL</strong><br>" +
@@ -435,7 +441,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
           "</p>" +
         "</div>" +
       "</div>";
-
+ 
     try {
       GmailApp.sendEmail(customerEmail, "🌸 Confirmación de Orden de Compra Mayorista - " + txId, "", {
         htmlBody: clientHtml,
@@ -443,6 +449,7 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
         replyTo: adminEmail,
         attachments: [pdfBlob]
       });
+      status.customer = "Enviado OK (Gmail)";
     } catch(errClient) {
       try {
         MailApp.sendEmail({
@@ -452,9 +459,16 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
           replyTo: adminEmail,
           attachments: [pdfBlob]
         });
-      } catch(e) {}
+        status.customer = "Enviado OK (MailApp)";
+      } catch(e) {
+        status.customer = "Error: " + e.toString();
+      }
     }
+  } else {
+    status.customer = "No se envió (correo del cliente vacío)";
   }
+
+  return status;
 }
 
 /**
