@@ -1332,7 +1332,18 @@ async function handleLookupSubmit(e) {
   const cleanId = rawId.replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, '').trim().toUpperCase();
   document.getElementById('lookup-ord-id').value = cleanId;
   const doc = document.getElementById('lookup-ord-doc').value.trim();
-  if (!cleanId) return;
+  
+  if (!cleanId && !doc) {
+    const msgEl = document.getElementById('lookup-status-msg');
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.background = '#fef2f2';
+      msgEl.style.color = '#dc2626';
+      msgEl.innerText = '⚠️ Por favor ingrese su N° de Orden de Compra (ej. RP-2026-3500) o su N° de DNI / RUC registrado.';
+    }
+    return;
+  }
+  
   await lookupAndRenderConfirmedOrder(cleanId, doc);
 }
 
@@ -1344,7 +1355,7 @@ async function lookupAndRenderConfirmedOrder(orderId, doc) {
     msgEl.style.display = 'block';
     msgEl.style.background = '#eff6ff';
     msgEl.style.color = '#1d4ed8';
-    msgEl.innerText = `🔍 Consultando Orden ${cleanId} en Google Sheets en tiempo real...`;
+    msgEl.innerText = `🔍 Buscando Orden en Google Sheets por ${cleanId ? 'N° ' + cleanId : 'DNI/RUC ' + doc}...`;
   }
 
   try {
