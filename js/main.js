@@ -128,8 +128,22 @@ function getUnitPrice(totalUnits) {
   }
 }
 
+// ================= GLOBAL MODAL MANAGEMENT =================
+function closeAllModals() {
+  if (waRedirectTimer) {
+    clearInterval(waRedirectTimer);
+    waRedirectTimer = null;
+  }
+  const modals = document.querySelectorAll('.modal-overlay');
+  modals.forEach(modal => {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  });
+}
+
 // ================= NAVIGATION =================
 function navigateTo(pageId) {
+  closeAllModals();
   const pages = ['inicio', 'tienda', 'sobre-nosotros', 'checkout', 'consulta-pago'];
   
   pages.forEach(p => {
@@ -603,8 +617,7 @@ function openProgressModal() {
 }
 
 function closeProgressModal() {
-  const modal = document.getElementById('order-progress-modal');
-  if (modal) modal.classList.remove('active');
+  closeAllModals();
 }
 
 async function executeOrderSubmit(payload) {
@@ -817,15 +830,7 @@ function openOrderSuccessModal(orderData, waUrl) {
 }
 
 function closeOrderSuccessModal() {
-  if (waRedirectTimer) {
-    clearInterval(waRedirectTimer);
-    waRedirectTimer = null;
-  }
-  const modal = document.getElementById('order-success-modal');
-  if (modal) {
-    modal.classList.remove('active');
-    modal.style.display = 'none';
-  }
+  closeAllModals();
 }
 
 function redownloadOrderPDF() {
@@ -1316,7 +1321,8 @@ window.app = {
   lookupAndRenderConfirmedOrder,
   openIzipayModal,
   closeIzipayModal,
-  processIzipayPayment
+  processIzipayPayment,
+  closeAllModals
 };
 
 // ── MANEJADORES DE CONSULTA Y PAGO DE ORDEN CONFIRMADA POR ALMACÉN / CHATBOT ──
@@ -1483,11 +1489,7 @@ function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
 }
 
 function closeIzipayModal() {
-  const modal = document.getElementById('izipay-checkout-modal');
-  if (modal) {
-    modal.classList.remove('active');
-    modal.style.display = 'none';
-  }
+  closeAllModals();
 }
 
 function processIzipayPayment() {
@@ -1645,6 +1647,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error(`%c  ✘ Error inicializando ${m.name}:`, 'color: #ef4444; font-weight: bold;', err);
     }
+  });
+
+  // Manejador global para cerrar modales al hacer clic en el fondo oscuro
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeAllModals();
+      }
+    });
   });
 
   console.log('%c------------------------------------------------------------------', infoStyle);
