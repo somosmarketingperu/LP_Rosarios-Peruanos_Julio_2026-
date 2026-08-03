@@ -680,3 +680,41 @@ function responderJSON(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 ```
+
+---
+
+## 🛠️ Configuración de Permisos Absolutos (`appsscript.json`)
+
+Para garantizar de forma permanente que tu Web App tenga los **permisos de seguridad absolutos** de Gmail, Sheets y Drive sin depender de detecciones automáticas de Google, debes configurar de forma explícita el archivo de manifiesto del proyecto:
+
+### 📋 Pasos para mostrar y configurar `appsscript.json`:
+
+1. En la barra lateral izquierda del editor de Google Apps Script, haz clic en el icono del **Engranaje (Configuración del proyecto)**.
+2. Marca la casilla que dice **"Mostrar el archivo de manifiesto 'appsscript.json' en el editor"**.
+3. Vuelve al editor de código haciendo clic en el icono de **`< >` (Editor)**.
+4. Verás que ahora aparece un nuevo archivo llamado **`appsscript.json`**.
+5. Abre ese archivo, **borra todo su contenido** y pega exactamente el siguiente bloque de configuración JSON:
+
+```json
+{
+  "timeZone": "America/Lima",
+  "dependencies": {
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "ANYONE"
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/script.send_mail"
+  ]
+}
+```
+
+6. Guarda los cambios (**Ctrl + S**).
+7. Al hacer una **Nueva implementación**, Google te obligará a otorgar los permisos absolutos de Gmail, asegurando que todos los correos se envíen por **`GmailApp`** y queden guardados en la carpeta **Enviados** de `contacto@rosariosperuanos.com`.
+
