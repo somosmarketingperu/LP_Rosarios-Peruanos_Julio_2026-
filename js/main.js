@@ -521,6 +521,9 @@ function submitClaimForm(e) {
 }
 
 // ================= B2B ORDER PROCESSOR =================
+// ================= B2B ORDER PROCESSOR =================
+let pendingOrderPayload = null;
+
 function processOrderSubmit(e) {
   if (e) e.preventDefault();
 
@@ -573,33 +576,159 @@ function processOrderSubmit(e) {
     items: cart
   };
 
-  // Dispatch Apps Script asynchronously
-  fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).catch(err => console.log("Order logged:", err));
+  pendingOrderPayload = payload;
+  openProgressModal();
+  executeOrderSubmit(payload);
+}
 
-  // Generate & Download PDF Orden de Compra
+function openProgressModal() {
+  const modal = document.getElementById('order-progress-modal');
+  if (!modal) return;
+  
+  document.getElementById('progress-modal-icon').innerText = '⏳';
+  document.getElementById('progress-modal-title').innerText = 'Procesando tu Pedido Mayorista';
+  document.getElementById('progress-bar-fill').style.width = '15%';
+  document.getElementById('progress-error-box').style.display = 'none';
+  
+  document.getElementById('log-step-1').style.display = 'block';
+  document.getElementById('log-step-1').style.color = '#38bdf8';
+  document.getElementById('log-step-1').innerText = '[SISTEMA] Iniciando procesamiento de orden...';
+  
+  document.getElementById('log-step-2').style.display = 'none';
+  document.getElementById('log-step-3').style.display = 'none';
+  document.getElementById('log-step-4').style.display = 'none';
+  document.getElementById('log-step-5').style.display = 'none';
+  
+  modal.classList.add('active');
+}
+
+function closeProgressModal() {
+  const modal = document.getElementById('order-progress-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function executeOrderSubmit(payload) {
+  const log2 = document.getElementById('log-step-2');
+  const log3 = document.getElementById('log-step-3');
+  const log4 = document.getElementById('log-step-4');
+  const log5 = document.getElementById('log-step-5');
+  const fill = document.getElementById('progress-bar-fill');
+  
   try {
-    generateOrderPDF(payload);
-  } catch (pdfErr) {
-    console.log("PDF error:", pdfErr);
+    if (log2) {
+      log2.style.display = 'block';
+      log2.style.color = '#38bdf8';
+      log2.innerText = '[API] Conectando con Google Apps Script...';
+    }
+    if (fill) fill.style.width = '40%';
+    
+    // Petición POST al Apps Script (text/plain evita Preflight OPTIONS)
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!resp.ok) {
+      throw new Error(`Error en el servidor: HTTP ${resp.status}`);
+    }
+    
+    const json = await resp.json();
+    console.log("[SERVER RESPONSE]:", json);
+    
+    if (json && json.success === true) {
+      if (log3) {
+        log3.style.display = 'block';
+        log3.style.color = '#10b981';
+        log3.innerText = '✔ [DATABASE] Registrado en Google Sheets con éxito.';
+      }
+      if (fill) fill.style.width = '65%';
+      
+      if (log4) {
+        log4.style.display = 'block';
+        log4.style.color = '#10b981';
+        log4.innerText = `✔ [DRIVE] Documento subido a la carpeta de Google Drive.`;
+      }
+      if (fill) fill.style.width = '85%';
+      
+      if (log5) {
+        log5.style.display = 'block';
+        log5.style.color = '#10b981';
+        log5.innerText = '✔ [EMAIL] Correos despachados al administrador y cliente.';
+      }
+      if (fill) fill.style.width = '100%';
+      document.getElementById('progress-modal-icon').innerText = '✅';
+      document.getElementById('progress-modal-title').innerText = '¡Procesamiento Completado!';
+      
+      // Esperar un instante para que el usuario lea el éxito
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Descarga de PDF local al cliente
+      try {
+        generateOrderPDF(payload);
+      } catch (pdfErr) {
+        console.log("Local PDF error:", pdfErr);
+      }
+      
+      closeProgressModal();
+      
+      // Limpiar cotización localmente
+      cart = [];
+      localStorage.setItem('rp_cart_v1', JSON.stringify(cart));
+      if (typeof renderCartMatrix === 'function') renderCartMatrix();
+      updateCartBadge();
+      
+      // WhatsApp Click setup
+      const itemsSummary = payload.items.map(i => `• ${i.product.name} (${i.product.sku}): ${i.quantity}u`).join('%0A');
+      const waMessage = `Hola Silvia Quispe, he generado mi *Orden de Compra Mayorista N° ${payload.orderId}*%0A%0A` +
+        `👤 *Cliente:* ${encodeURIComponent(payload.buyerName)} (${payload.buyerRuc})%0A` +
+        `💬 *WhatsApp:* ${payload.buyerPhone}%0A` +
+        `📍 *Entrega:* ${payload.deliveryOption === 'pickup' ? 'Recojo Almacén Magdalena' : 'Envío Agencia (' + encodeURIComponent(payload.buyerAddress) + ')'}%0A%0A` +
+        `📦 *Productos Pedidos:*%0A${itemsSummary}%0A%0A` +
+        `💰 *Monto Total:* S/. ${payload.grandTotal.toFixed(2)} (Precio B2B: S/. ${payload.unitPrice.toFixed(2)}/u)%0A%0A` +
+        `Solicito confirmación física de stock en almacén para proceder con la transferencia a la Cuenta Corriente de Somos Marketing Perú EIRL o Izipay.`;
+      const waUrl = `https://wa.me/51969654895?text=${waMessage}`;
+      
+      openOrderSuccessModal(payload, waUrl);
+    } else {
+      throw new Error(json.message || "Error desconocido devuelto por el servidor.");
+    }
+    
+  } catch (err) {
+    console.error("[SUBMIT ERROR]:", err);
+    
+    document.getElementById('progress-modal-icon').innerText = '❌';
+    document.getElementById('progress-modal-title').innerText = 'Fallo en la Sincronización';
+    
+    if (log2 && log2.style.display === 'block') {
+      log2.style.color = '#ef4444';
+      log2.innerText = `✖ [API] Error al conectar con Google Apps Script: ${err.message}`;
+    }
+    
+    const errBox = document.getElementById('progress-error-box');
+    const errDetails = document.getElementById('progress-error-details');
+    if (errBox && errDetails) {
+      errDetails.innerText = `Detalle técnico: ${err.message || err}`;
+      errBox.style.display = 'block';
+    }
   }
+}
 
-  // Build WhatsApp Message
-  const itemsSummary = cart.map(i => `• ${i.product.name} (${i.product.sku}): ${i.quantity}u`).join('%0A');
-  const waMessage = `Hola Silvia Quispe, he generado mi *Orden de Compra Mayorista N° ${orderId}*%0A%0A` +
-    `👤 *Cliente:* ${encodeURIComponent(name)} (${doc})%0A` +
-    `💬 *WhatsApp:* ${phone}%0A` +
-    `📍 *Entrega:* ${delivery === 'pickup' ? 'Recojo Almacén Magdalena' : 'Envío Agencia (' + encodeURIComponent(address) + ')'}%0A%0A` +
-    `📦 *Productos Pedidos:*%0A${itemsSummary}%0A%0A` +
-    `💰 *Monto Total:* S/. ${grandTotal.toFixed(2)} (Precio B2B: S/. ${unitPrice.toFixed(2)}/u)%0A%0A` +
-    `Solicito confirmación física de stock en almacén para proceder con la transferencia a la Cuenta Corriente de Somos Marketing Perú EIRL o Izipay.`;
-
-  const waUrl = `https://wa.me/51969654895?text=${waMessage}`;
-  openOrderSuccessModal(payload, waUrl);
+function retryOrderSubmit() {
+  if (pendingOrderPayload) {
+    document.getElementById('progress-error-box').style.display = 'none';
+    document.getElementById('progress-modal-icon').innerText = '⏳';
+    document.getElementById('progress-modal-title').innerText = 'Procesando tu Pedido Mayorista';
+    document.getElementById('progress-bar-fill').style.width = '15%';
+    
+    document.getElementById('log-step-1').innerText = '[SISTEMA] Reintentando procesamiento de orden...';
+    document.getElementById('log-step-2').style.display = 'none';
+    document.getElementById('log-step-3').style.display = 'none';
+    document.getElementById('log-step-4').style.display = 'none';
+    document.getElementById('log-step-5').style.display = 'none';
+    
+    executeOrderSubmit(pendingOrderPayload);
+  }
 }
 
 let lastGeneratedOrderPayload = null;
@@ -1108,7 +1237,9 @@ window.app = {
   openCancelOrderModal,
   closeCancelOrderModal,
   submitCancelOrderForm,
-  setSilviaView
+  setSilviaView,
+  retryOrderSubmit,
+  closeProgressModal
 };
 
 // Initialization on Ready

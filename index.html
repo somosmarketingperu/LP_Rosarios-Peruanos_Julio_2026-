@@ -1003,6 +1003,46 @@
     </div>
   </div>
 
+  <!-- MODAL: PROGRESO Y LOG DE ENVÍO AL BACKEND (GOOGLE SHEETS & EMAIL) -->
+  <div id="order-progress-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 480px; overflow: hidden; border-radius: var(--radius-xl);">
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, var(--primary), #8c001e); color: white; padding: 1.5rem; text-align: center;">
+        <div id="progress-modal-icon" style="font-size: 2.5rem; margin-bottom: 0.2rem;">⏳</div>
+        <h3 id="progress-modal-title" class="font-display" style="font-size: 1.25rem; font-weight: 800; margin: 0; color: white;">Procesando tu Pedido Mayorista</h3>
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); margin-top: 0.2rem; margin-bottom: 0;">Sincronizando con el servidor de Google</p>
+      </div>
+
+      <div class="modal-body" style="padding: 1.5rem;">
+        
+        <!-- Progreso Visual (Barra de progreso animada) -->
+        <div style="background: var(--border-gray); height: 8px; border-radius: 9999px; overflow: hidden; margin-bottom: 1.5rem;">
+          <div id="progress-bar-fill" style="background: var(--secondary); width: 15%; height: 100%; transition: width 0.4s ease; border-radius: 9999px;"></div>
+        </div>
+
+        <!-- Log detallado estilo consola del backend -->
+        <div style="background: #0f172a; color: #38bdf8; font-family: var(--font-mono); font-size: 0.75rem; padding: 1rem; border-radius: var(--radius-lg); min-height: 120px; line-height: 1.6; display: flex; flex-direction: column; gap: 0.4rem; border: 1px solid #1e293b; text-align: left;">
+          <div id="log-step-1" style="color: #94a3b8;">[SISTEMA] Iniciando procesamiento de orden...</div>
+          <div id="log-step-2" style="display: none;">[API] Conectando con Google Apps Script...</div>
+          <div id="log-step-3" style="display: none;">[DATABASE] Escribiendo datos en Google Sheets...</div>
+          <div id="log-step-4" style="display: none;">[DRIVE] Subiendo Orden de Compra PDF a Google Drive...</div>
+          <div id="log-step-5" style="display: none;">[EMAIL] Despachando notificaciones automáticas...</div>
+        </div>
+
+        <!-- Box de Error y Botón de Reintento (ocultos inicialmente) -->
+        <div id="progress-error-box" style="display: none; margin-top: 1.25rem; background: #fef2f2; border: 1px solid #fee2e2; padding: 1rem; border-radius: var(--radius-md); text-align: center;">
+          <p style="color: #991b1b; font-weight: 700; font-size: 0.8rem; margin: 0 0 0.75rem 0;">⚠️ Ocurrió un inconveniente al conectar con el servidor.</p>
+          <div id="progress-error-details" style="font-family: var(--font-mono); font-size: 0.7rem; color: #b91c1c; margin-bottom: 1rem; word-break: break-all;"></div>
+          <button type="button" onclick="window.app.retryOrderSubmit()" class="btn-primary" style="background: #dc2626; width: 100%; justify-content: center; padding: 0.65rem; font-size: 0.85rem;">
+            🔄 Reintentar Envío a Google Sheets
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: ÉXITO DE ORDEN DE COMPRA GENERADA -->
   <div id="order-success-modal" class="modal-overlay">
     <div class="modal-card" style="max-width: 480px; overflow: hidden; border-radius: var(--radius-xl);">
