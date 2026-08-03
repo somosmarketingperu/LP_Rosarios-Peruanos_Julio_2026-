@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60" width="300" height="60">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@800&amp;family=JetBrains+Mono:wght@600&amp;display=swap');
+      .main-text { font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 800; fill: #a70025; letter-spacing: -0.5px; }
+      .sub-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; fill: #5c3f3f; letter-spacing: 1px; text-transform: uppercase; }
+      .cross { font-family: sans-serif; font-size: 24px; font-weight: bold; fill: #a70025; text-anchor: middle; }
+    </style>
+  </defs>
+  
+  <!-- Circle background and border -->
+  <circle cx="30" cy="30" r="20" fill="#a70025" fill-opacity="0.05" stroke="#a70025" stroke-opacity="0.1" stroke-width="1"/>
+  
+  <!-- Cross -->
+  <text x="30" y="37" class="cross">†</text>
+  
+  <!-- Texts -->
+  <text x="65" y="32" class="main-text">Rosarios Peruanos</text>
+  <text x="65" y="47" class="sub-text">DISTRIBUIDORA MAYORISTA</text>
+</svg>
