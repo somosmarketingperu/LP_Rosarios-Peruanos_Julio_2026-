@@ -18,7 +18,7 @@ Este archivo contiene el código oficial y la guía paso a paso de **Google Apps
    * **Ejecutar como:** `Yo (tu correo)`
    * **Quién tiene acceso:** `Cualquiera (Anyone)`
 11. Pegue esa URL en el archivo de configuración del frontend (`js/main.js` en la variable `APPS_SCRIPT_URL`).
-    * URL Actual Configurada: `https://script.google.com/macros/s/AKfycbxi-sqhnpRUu6V09OyBWtm6KWwr14JtkA-YWakFRr-e6UWGNHN6TAgQz3XtGxMkjhKm/exec`
+    * URL Actual Configurada: `https://script.google.com/macros/s/AKfycbygU8iUN8jogpq9ZycqO36MqV18zS7oW23SOATu0n7vfBuY66nGvG2j_OD3_yPXZeP9/exec`
 
 ---
 
