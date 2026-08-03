@@ -65,7 +65,10 @@ function doPost(e) {
     }
 
     // Identificar el tipo de solicitud
-    if (payload.type === "claim" || payload.isClaim) {
+    if (payload.type === "lookupOrder" || payload.action === "lookupOrder") {
+      Logger.log("[GAS BACKEND] 🔍 Buscando datos de Orden N° " + payload.orderId);
+      return consultarOrdenEnSheets(payload, ss);
+    } else if (payload.type === "claim" || payload.isClaim) {
       Logger.log("[GAS BACKEND] 📑 Procesando Reclamación INDECOPI...");
       return procesarReclamo(payload, ss);
     } else if (payload.type === "cancelOrder" || payload.action === "cancelOrder") {
@@ -80,6 +83,60 @@ function doPost(e) {
     Logger.log("[GAS BACKEND] 💥 Error en la ejecución: " + error.toString());
     return responderJSON({ success: false, message: "Error interno: " + error.toString() });
   }
+}
+
+/**
+ * Consulta y devuelve la información actualizada en tiempo real de una Orden desde Google Sheets
+ */
+function consultarOrdenEnSheets(payload, ss) {
+  var sheet = ss.getSheetByName("Pedidos");
+  if (!sheet) {
+    return responderJSON({ success: false, message: "No se encontró la base de datos de Pedidos" });
+  }
+
+  var searchId = (payload.orderId || "").toString().trim().toUpperCase();
+  var searchDoc = (payload.buyerRuc || payload.doc || payload.dni || "").toString().trim();
+
+  if (!searchId) {
+    return responderJSON({ success: false, message: "Debe ingresar el Número de Orden de Compra" });
+  }
+
+  var data = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    var rowId = (data[i][1] || "").toString().trim().toUpperCase();
+    var rowDoc = (data[i][3] || "").toString().trim();
+    
+    if (rowId === searchId) {
+      if (searchDoc !== "" && rowDoc !== searchDoc && searchDoc !== "ADMIN") {
+        return responderJSON({ success: false, message: "El DNI/RUC ingresado no coincide con el registro de la Orden N° " + searchId });
+      }
+
+      var orderObj = {
+        orderId: data[i][1],
+        date: data[i][0],
+        buyerName: data[i][2],
+        buyerRuc: data[i][3],
+        buyerPhone: data[i][4],
+        buyerEmail: data[i][5],
+        deliveryOption: data[i][6],
+        buyerAddress: data[i][7],
+        totalUnits: parseFloat(data[i][8]) || 0,
+        unitPrice: parseFloat(data[i][9]) || 0,
+        subtotal: parseFloat(data[i][10]) || 0,
+        igvAmount: parseFloat(data[i][11]) || 0,
+        shippingFee: parseFloat(data[i][12]) || 0,
+        grandTotal: parseFloat(data[i][13]) || 0,
+        driveUrl: data[i][14],
+        itemsText: data[i][15],
+        status: data[i][16] || "REGISTRADO"
+      };
+
+      return responderJSON({ success: true, order: orderObj });
+    }
+  }
+
+  return responderJSON({ success: false, message: "No se encontró ninguna Orden de Compra registrada con el N° " + searchId });
 }
 
 function doGet(e) {

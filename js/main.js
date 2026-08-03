@@ -1311,8 +1311,151 @@ window.app = {
   submitCancelOrderForm,
   setSilviaView,
   retryOrderSubmit,
-  closeProgressModal
+  closeProgressModal,
+  handleLookupSubmit,
+  lookupAndRenderConfirmedOrder
 };
+
+// ── MANEJADORES DE CONSULTA Y PAGO DE ORDEN CONFIRMADA POR ALMACÉN / CHATBOT ──
+async function handleLookupSubmit(e) {
+  if (e) e.preventDefault();
+  const orderId = document.getElementById('lookup-ord-id').value.trim();
+  const doc = document.getElementById('lookup-ord-doc').value.trim();
+  if (!orderId) return;
+  await lookupAndRenderConfirmedOrder(orderId, doc);
+}
+
+async function lookupAndRenderConfirmedOrder(orderId, doc) {
+  const msgEl = document.getElementById('lookup-status-msg');
+  if (msgEl) {
+    msgEl.style.display = 'block';
+    msgEl.style.background = '#eff6ff';
+    msgEl.style.color = '#1d4ed8';
+    msgEl.innerText = '🔍 Consultando Google Sheets en tiempo real...';
+  }
+
+  try {
+    const payload = {
+      type: 'lookupOrder',
+      action: 'lookupOrder',
+      orderId: orderId,
+      buyerRuc: doc,
+      doc: doc
+    };
+
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+
+    if (json && json.success && json.order) {
+      const o = json.order;
+      if (msgEl) {
+        msgEl.style.background = '#ecfdf5';
+        msgEl.style.color = '#047857';
+        msgEl.innerText = `✅ ¡Orden N° ${o.orderId} encontrada! Mostrando ficha de pago actualizada.`;
+      }
+
+      // Renderizar la Ficha de Pago de Orden Confirmada en la página de Checkout
+      renderConfirmedPaymentCard(o);
+    } else {
+      throw new Error(json.message || 'No se encontró la Orden de Compra.');
+    }
+
+  } catch (err) {
+    if (msgEl) {
+      msgEl.style.background = '#fef2f2';
+      msgEl.style.color = '#b91c1c';
+      msgEl.innerText = `✖ Error: ${err.message}`;
+    }
+  }
+}
+
+function renderConfirmedPaymentCard(o) {
+  const container = document.getElementById('checkout-table-container');
+  if (!container) return;
+
+  const driveBtn = o.driveUrl ? `<a href="${o.driveUrl}" target="_blank" class="btn-secondary" style="font-size:0.8rem; padding:0.4rem 0.8rem;">📄 Abrir PDF en Google Drive</a>` : '';
+
+  container.innerHTML = `
+    <div style="background: white; border: 2px solid #2563eb; border-radius: var(--radius-xl); padding: 2rem 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-light); padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span style="background: #2563eb; color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 800; font-size: 0.75rem; font-family: var(--font-mono);">
+            ESTADO: ${o.status || 'CONFIRMADO POR ALMACÉN'}
+          </span>
+          <h2 class="font-display" style="font-size: 1.6rem; font-weight: 900; color: var(--text-dark); margin-top: 0.5rem;">
+            Ficha de Pago — Orden N° ${o.orderId}
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--text-gray); margin-top: 0.2rem;">
+            Cliente: <strong>${o.buyerName || 'Cliente'}</strong> | RUC/DNI: <strong>${o.buyerRuc || '—'}</strong> | Tel: <strong>${o.buyerPhone || '—'}</strong>
+          </p>
+        </div>
+        <div>${driveBtn}</div>
+      </div>
+
+      <!-- Detalle de productos y cantidades confirmadas -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <h4 style="font-weight: 800; color: #1e293b; font-size: 0.9rem; margin-bottom: 0.75rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.4rem;">
+          📦 DETALLE DE ROSARIOS Y CANTIDADES CONFIRMADAS EN ALMACÉN:
+        </h4>
+        <pre style="font-family: var(--font-mono); font-size: 0.85rem; color: #334155; white-space: pre-wrap; margin: 0; line-height: 1.6;">${o.itemsText || 'Rosarios Plásticos Surtidos'}</pre>
+      </div>
+
+      <!-- Resumen Financiero Actualizado -->
+      <div style="background: #eff6ff; border: 2px solid #bfdbfe; border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; text-align: center;">
+        <div>
+          <span style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 700;">Unidades Finales</span>
+          <div style="font-size: 1.3rem; font-weight: 900; color: #1e3a8a;">${o.totalUnits.toLocaleString()} u</div>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 700;">Precio Unit. B2B</span>
+          <div style="font-size: 1.3rem; font-weight: 900; color: #1e3a8a;">S/. ${o.unitPrice.toFixed(2)}</div>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 700;">Flete</span>
+          <div style="font-size: 1.3rem; font-weight: 900; color: #1e3a8a;">${o.shippingFee === 0 ? 'GRATIS' : 'S/. ' + o.shippingFee.toFixed(2)}</div>
+        </div>
+        <div style="background: #2563eb; color: white; padding: 0.75rem; border-radius: var(--radius-md);">
+          <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; opacity: 0.9;">TOTAL A PAGAR</span>
+          <div style="font-size: 1.6rem; font-weight: 900; color: white;">S/. ${o.grandTotal.toFixed(2)}</div>
+        </div>
+      </div>
+
+      <!-- Indicación de pago Izipay -->
+      <div style="text-align: center;">
+        <p style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 1rem;">
+          💳 <strong>Complete su pago seguro con Izipay (Tarjeta Crédito/Débito) o Transferencia por el monto exacto de S/. ${o.grandTotal.toFixed(2)}:</strong>
+        </p>
+      </div>
+    </div>
+  `;
+
+  // Actualizar totales en la columna derecha
+  updateTotalsSummaryConfirmed(o);
+
+  // Scroll suave hacia la ficha de pago
+  const checkoutSection = document.getElementById('page-checkout');
+  if (checkoutSection) checkoutSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+function updateTotalsSummaryConfirmed(o) {
+  const sumQty = document.getElementById('sum-qty');
+  const sumUnitPrice = document.getElementById('sum-unit-price');
+  const sumSubtotal = document.getElementById('sum-subtotal');
+  const sumShipping = document.getElementById('sum-shipping');
+  const sumTotal = document.getElementById('sum-total');
+
+  if (sumQty) sumQty.innerText = o.totalUnits.toLocaleString() + ' unidades';
+  if (sumUnitPrice) sumUnitPrice.innerText = 'S/. ' + o.unitPrice.toFixed(2) + ' /u';
+  if (sumSubtotal) sumSubtotal.innerText = 'S/. ' + o.subtotal.toFixed(2);
+  if (sumShipping) sumShipping.innerText = o.shippingFee === 0 ? 'GRATIS' : 'S/. ' + o.shippingFee.toFixed(2);
+  if (sumTotal) sumTotal.innerText = 'S/. ' + o.grandTotal.toFixed(2);
+}
 
 // Initialization on Ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -1401,7 +1544,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const actionParam = urlParams.get('action');
         const orderIdParam = urlParams.get('orderId') || urlParams.get('oc');
-        if (actionParam === 'cancelOrder' || actionParam === 'anular' || orderIdParam) {
+        const docParam = urlParams.get('doc') || urlParams.get('ruc') || urlParams.get('dni');
+
+        if (actionParam === 'pay' || actionParam === 'consultar' || actionParam === 'lookup') {
+          if (orderIdParam) {
+            const lookupInput = document.getElementById('lookup-ord-id');
+            if (lookupInput) lookupInput.value = orderIdParam.trim().toUpperCase();
+            if (docParam) {
+              const lookupDoc = document.getElementById('lookup-ord-doc');
+              if (lookupDoc) lookupDoc.value = docParam.trim();
+            }
+            navigateTo('checkout');
+            lookupAndRenderConfirmedOrder(orderIdParam, docParam || '');
+          }
+        } else if (actionParam === 'cancelOrder' || actionParam === 'anular' || orderIdParam) {
           if (orderIdParam) {
             const cancelInput = document.getElementById('cancel-ord-id');
             if (cancelInput) cancelInput.value = orderIdParam.trim().toUpperCase();

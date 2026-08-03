@@ -515,7 +515,26 @@
           <h2 class="font-display" style="font-size: 2.25rem; font-weight: 800; margin-top: 0.5rem;">Generación de Orden de Compra Mayorista</h2>
           <p style="color: var(--text-gray); font-size: 0.95rem; max-width: 650px; margin: 0.25rem auto 0;">
             Debido a la alta rotación de inventario en almacén, verifique su cotización, genere su <strong>Orden de Compra (Dossier PDF)</strong> y solicite la confirmación de stock antes de realizar el pago.
-          </p>
+        <!-- CARD DE BÚSQUEDA Y PAGO DE ORDEN CONFIRMADA POR CHATBOT / ALMACÉN -->
+        <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 2px solid #2563eb; border-radius: var(--radius-xl); padding: 1.25rem 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; color: #1e40af; font-weight: 800; font-size: 1.05rem;">
+                <span>💳</span> ¿Tienes una Orden Confirmada por WhatsApp o Chatbot?
+              </div>
+              <p style="font-size: 0.82rem; color: #1e3a8a; margin: 0.25rem 0 0 0; font-weight: 500;">
+                Ingresa tu <strong>N° de Orden</strong> y tu <strong>DNI / RUC</strong> para cargar tu ficha con el monto final actualizado por almacén y pagar con <strong>Izipay</strong> o Transferencia.
+              </p>
+            </div>
+            <form onsubmit="window.app.handleLookupSubmit(event)" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+              <input type="text" id="lookup-ord-id" placeholder="Ej: RP-2026-3500" required style="padding: 0.65rem 0.85rem; border: 1px solid #93c5fd; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 0.85rem; width: 145px; text-transform: uppercase;" />
+              <input type="text" id="lookup-ord-doc" placeholder="DNI / RUC (Opcional)" style="padding: 0.65rem 0.85rem; border: 1px solid #93c5fd; border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 0.85rem; width: 145px;" />
+              <button type="submit" class="btn-primary" style="background: #2563eb; padding: 0.65rem 1.1rem; font-size: 0.85rem; font-weight: 800; white-space: nowrap;">
+                🔎 Cargar Ficha de Pago
+              </button>
+            </form>
+          </div>
+          <div id="lookup-status-msg" style="display: none; margin-top: 0.75rem; font-size: 0.85rem; font-weight: 700; text-align: center; padding: 0.5rem; border-radius: var(--radius-md);"></div>
         </div>
 
         <!-- Order Progress Bar (Barra de Progreso) -->
