@@ -1319,27 +1319,30 @@ window.app = {
 // ── MANEJADORES DE CONSULTA Y PAGO DE ORDEN CONFIRMADA POR ALMACÉN / CHATBOT ──
 async function handleLookupSubmit(e) {
   if (e) e.preventDefault();
-  const orderId = document.getElementById('lookup-ord-id').value.trim();
+  const rawId = document.getElementById('lookup-ord-id').value.trim();
+  const cleanId = rawId.replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, '').trim().toUpperCase();
+  document.getElementById('lookup-ord-id').value = cleanId;
   const doc = document.getElementById('lookup-ord-doc').value.trim();
-  if (!orderId) return;
-  await lookupAndRenderConfirmedOrder(orderId, doc);
+  if (!cleanId) return;
+  await lookupAndRenderConfirmedOrder(cleanId, doc);
 }
 
 async function lookupAndRenderConfirmedOrder(orderId, doc) {
   navigateTo('consulta-pago');
+  const cleanId = (orderId || '').toString().replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, '').trim().toUpperCase();
   const msgEl = document.getElementById('lookup-status-msg');
   if (msgEl) {
     msgEl.style.display = 'block';
     msgEl.style.background = '#eff6ff';
     msgEl.style.color = '#1d4ed8';
-    msgEl.innerText = '🔍 Consultando Google Sheets en tiempo real...';
+    msgEl.innerText = `🔍 Consultando Orden ${cleanId} en Google Sheets en tiempo real...`;
   }
 
   try {
     const payload = {
       type: 'lookupOrder',
       action: 'lookupOrder',
-      orderId: orderId,
+      orderId: cleanId,
       buyerRuc: doc,
       doc: doc
     };

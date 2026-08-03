@@ -94,8 +94,9 @@ function consultarOrdenEnSheets(payload, ss) {
     return responderJSON({ success: false, message: "No se encontró la base de datos de Pedidos" });
   }
 
-  var searchId = (payload.orderId || "").toString().trim().toUpperCase();
-  var searchDoc = (payload.buyerRuc || payload.doc || payload.dni || "").toString().trim();
+  // Limpiar prefijos comunes como N°, N°, ORDEN, # o espacios extra
+  var searchId = (payload.orderId || "").toString().replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, "").trim().toUpperCase();
+  var searchDoc = (payload.buyerRuc || payload.doc || payload.dni || "").toString().replace(/\D/g, "").trim();
 
   if (!searchId) {
     return responderJSON({ success: false, message: "Debe ingresar el Número de Orden de Compra" });
@@ -104,12 +105,13 @@ function consultarOrdenEnSheets(payload, ss) {
   var data = sheet.getDataRange().getValues();
 
   for (var i = 1; i < data.length; i++) {
-    var rowId = (data[i][1] || "").toString().trim().toUpperCase();
-    var rowDoc = (data[i][3] || "").toString().trim();
+    var rawRowId = (data[i][1] || "").toString();
+    var rowId = rawRowId.replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, "").trim().toUpperCase();
+    var rowDoc = (data[i][3] || "").toString().replace(/\D/g, "").trim();
     
-    if (rowId === searchId) {
+    if (rowId === searchId || rawRowId.toUpperCase() === searchId) {
       if (searchDoc !== "" && rowDoc !== searchDoc && searchDoc !== "ADMIN") {
-        return responderJSON({ success: false, message: "El DNI/RUC ingresado no coincide con el registro de la Orden N° " + searchId });
+        return responderJSON({ success: false, message: "El DNI/RUC ingresado no coincide con el registro de la Orden " + searchId });
       }
 
       var orderObj = {
