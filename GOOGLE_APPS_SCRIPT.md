@@ -277,7 +277,8 @@ function enviarCorreosPedido(payload, txId, driveUrl, pdfBlob) {
     }).join("");
   }
 
-  var cancelUrl = "https://script.google.com/macros/s/AKfycbxi-sqhnpRUu6V09OyBWtm6KWwr14JtkA-YWakFRr-e6UWGNHN6TAgQz3XtGxMkjhKm/exec?action=cancelOrder&orderId=" + encodeURIComponent(txId);
+  var serviceUrl = ScriptApp.getService().getUrl();
+  var cancelUrl = serviceUrl + "?action=cancelOrder&orderId=" + encodeURIComponent(txId);
   var waUrl = "https://wa.me/51969654895?text=Hola%20Silvia%20Quispe,%20he%20generado%20mi%20Orden%20de%20Compra%20Mayorista%20N%C2%B0%20" + encodeURIComponent(txId);
 
   // Email para la administración (Silvia Quispe)
