@@ -35,11 +35,18 @@ Este archivo contiene el código oficial y la guía paso a paso de **Google Apps
  */
 
 var CONFIG = {
-  SPREADSHEET_ID   : "1ck7-t6wiPSeW1DrqbzArPTR7ZiVIJhhxeNsQG2rdMjk", 
-  DRIVE_FOLDER_NAME: "Órdenes y Reclamos Rosarios Peruanos",
-  EMPRESA_NOMBRE   : "Rosarios Peruanos / Somos Marketing Perú EIRL",
-  ADMIN_EMAIL      : "contacto@rosariosperuanos.com",
-  SECRET_KEY       : "RP2026-SOMOS-MKT-PERU-SECURE-9k2x"
+  SPREADSHEET_ID      : "1ck7-t6wiPSeW1DrqbzArPTR7ZiVIJhhxeNsQG2rdMjk", 
+  DRIVE_FOLDER_NAME   : "Órdenes y Reclamos Rosarios Peruanos",
+  EMPRESA_NOMBRE      : "Rosarios Peruanos / Somos Marketing Perú EIRL",
+  ADMIN_EMAIL         : "contacto@rosariosperuanos.com",
+  SECRET_KEY          : "RP2026-SOMOS-MKT-PERU-SECURE-9k2x",
+  
+  // ── CREDANCIALES IZIPAY REST V4 (MODO TEST CONFIGURADO) ──
+  IZIPAY_SHOP_ID      : "17674381",
+  IZIPAY_REST_PASSWORD: "testpassword_xMXAFLpaUuR9ovotsKD5uJk0ug8LpHnsOtK3sXXC8SRhc",
+  IZIPAY_HMAC_KEY     : "2SsIqd4AisrcS5ovJJwN37Bar2tgYaDdTJ7xZweJ5fFs",
+  IZIPAY_API_URL      : "https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment"
+
 };
 
 function doPost(e) {
@@ -68,6 +75,12 @@ function doPost(e) {
     if (payload.type === "lookupOrder" || payload.action === "lookupOrder") {
       Logger.log("[GAS BACKEND] 🔍 Buscando datos de Orden N° " + payload.orderId);
       return consultarOrdenEnSheets(payload, ss);
+    } else if (payload.type === "createIzipayToken" || payload.action === "createIzipayToken") {
+      Logger.log("[GAS BACKEND] 💳 Generando formToken Izipay para Orden N° " + payload.orderId);
+      return crearTokenIzipay(payload, ss);
+    } else if (payload.type === "confirmIzipayPayment" || payload.action === "confirmIzipayPayment") {
+      Logger.log("[GAS BACKEND] 🔒 Confirmando pago Izipay para Orden N° " + payload.orderId);
+      return confirmarPagoIzipay(payload, ss);
     } else if (payload.type === "claim" || payload.isClaim) {
       Logger.log("[GAS BACKEND] 📑 Procesando Reclamación INDECOPI...");
       return procesarReclamo(payload, ss);
@@ -84,6 +97,295 @@ function doPost(e) {
     return responderJSON({ success: false, message: "Error interno: " + error.toString() });
   }
 }
+
+/**
+ * Genera el formToken de Izipay llamando a la API REST V4 de Izipay desde el servidor
+ */
+function crearTokenIzipay(payload, ss) {
+  var sheet = ss.getSheetByName("Pedidos");
+  if (!sheet) return responderJSON({ success: false, message: "No se encontró la hoja de Pedidos" });
+
+  var searchId = (payload.orderId || "").toString().replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, "").trim().toUpperCase();
+  if (!searchId) return responderJSON({ success: false, message: "N° de Orden requerido" });
+
+  var data = sheet.getDataRange().getValues();
+  var orderRow = null;
+
+  for (var i = 1; i < data.length; i++) {
+    var rowId = (data[i][1] || "").toString().replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, "").trim().toUpperCase();
+    if (rowId === searchId) {
+      orderRow = data[i];
+      break;
+    }
+  }
+
+  if (!orderRow) return responderJSON({ success: false, message: "Orden N° " + searchId + " no encontrada en la base de datos" });
+
+  var grandTotal = parseFloat(orderRow[13]) || 0;
+  if (grandTotal <= 0) return responderJSON({ success: false, message: "El monto total de la orden debe ser mayor a cero" });
+
+  // Convertir monto a céntimos (ej. S/. 525.00 -> 52500)
+  var amountInCents = Math.round(grandTotal * 100);
+
+  var izipayPayload = {
+    "amount": amountInCents,
+    "currency": "PEN",
+    "orderId": searchId,
+    "customer": {
+      "email": orderRow[5] || "cliente@rosariosperuanos.com",
+      "billingDetails": {
+        "firstName": orderRow[2] || "Cliente Rosarios",
+        "identityCode": orderRow[3] || "00000000",
+        "phoneNumber": orderRow[4] || "999999999"
+      }
+    }
+  };
+
+  var authHeader = "Basic " + Utilities.base64Encode(CONFIG.IZIPAY_SHOP_ID + ":" + CONFIG.IZIPAY_REST_PASSWORD);
+
+  var options = {
+    "method": "post",
+    "contentType": "application/json",
+    "headers": {
+      "Authorization": authHeader
+    },
+    "payload": JSON.stringify(izipayPayload),
+    "muteHttpExceptions": true
+  };
+
+  try {
+    var response = UrlFetchApp.fetch(CONFIG.IZIPAY_API_URL, options);
+    var resJson = JSON.parse(response.getContentText());
+
+    if (resJson.status === "SUCCESS" && resJson.answer && resJson.answer.formToken) {
+      return responderJSON({
+        success: true,
+        formToken: resJson.answer.formToken,
+        amount: grandTotal,
+        orderId: searchId
+      });
+    } else {
+      var errorMsg = (resJson.answer && resJson.answer.errorMessage) || resJson.message || "Error al obtener formToken de Izipay";
+      return responderJSON({ success: false, message: "Izipay API: " + errorMsg });
+    }
+  } catch (err) {
+    return responderJSON({ success: false, message: "Error conectando con la API de Izipay: " + err.toString() });
+  }
+}
+
+/**
+ * Confirma el pago de la orden en Google Sheets
+ */
+function confirmarPagoIzipay(payload, ss) {
+  var sheet = ss.getSheetByName("Pedidos");
+  if (!sheet) return responderJSON({ success: false, message: "No se encontró la hoja de Pedidos" });
+
+  var searchId = (payload.orderId || "").toString().replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, "").trim().toUpperCase();
+  var txId = payload.transactionId || "TX-IZIPAY";
+  var data = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < data.length; i++) {
+    var rowId = (data[i][1] || "").toString().replace(/^(N[°ºo]?|ORDEN|OC|#|\s)+/gi, "").trim().toUpperCase();
+    if (rowId === searchId) {
+      // Actualizar estado a PAGADO (Izipay) en la columna 17 (Estado)
+      sheet.getRange(i + 1, 17).setValue("PAGADO (Izipay TX: " + txId + ")").setBackground("#ecfdf5").setFontColor("#047857");
+      
+      // Reconstruir el payload para el PDF y el correo
+      var orderPayload = {
+        orderId: searchId,
+        buyerName: data[i][2],
+        buyerRuc: data[i][3],
+        buyerPhone: data[i][4],
+        buyerEmail: data[i][5],
+        deliveryOption: data[i][6],
+        buyerAddress: data[i][7],
+        totalUnits: parseFloat(data[i][8]) || 0,
+        unitPrice: parseFloat(data[i][9]) || 0,
+        subtotal: parseFloat(data[i][10]) || 0,
+        igvAmount: parseFloat(data[i][11]) || 0,
+        shippingFee: parseFloat(data[i][12]) || 0,
+        grandTotal: parseFloat(data[i][13]) || 0,
+        items: reconstruirItemsDesdeText(data[i][15]),
+        status: "PAGADO (Izipay TX: " + txId + ")"
+      };
+
+      // Generar el PDF actualizado con el sello de PAGADO
+      var pdfHtml = construirPDFHTML(orderPayload, searchId);
+      var pdfBlob = Utilities.newBlob(pdfHtml, MimeType.HTML)
+                    .setName("Comprobante-Pago-RP-" + searchId + ".pdf")
+                    .getAs(MimeType.PDF);
+
+      // Subir el PDF actualizado a Drive
+      var driveUrl = "";
+      try {
+        var folder = obtenerOCrearCarpetaDrive("Órdenes y Reclamos Rosarios Peruanos");
+        var archivo = folder.createFile(pdfBlob);
+        archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        driveUrl = archivo.getUrl();
+        // Guardar el nuevo PDF URL en la columna 15 (PDF Orden Compra)
+        sheet.getRange(i + 1, 15).setValue(driveUrl);
+      } catch(driveErr) {
+        Logger.log("[GAS DRIVE] Error guardando PDF de pago: " + driveErr.toString());
+      }
+
+      // Enviar correos al administrador y al cliente con el PDF de pago
+      try {
+        enviarCorreosConfirmacionPago(orderPayload, txId, driveUrl, pdfBlob);
+      } catch(mailErr) {
+        Logger.log("[GAS EMAIL] Error enviando correos de pago: " + mailErr.toString());
+      }
+
+      return responderJSON({ success: true, message: "Pago confirmado y correos enviados exitosamente" });
+    }
+  }
+
+  return responderJSON({ success: false, message: "Orden N° " + searchId + " no encontrada para actualizar estado" });
+}
+
+// Función auxiliar para parsear items desde texto
+function reconstruirItemsDesdeText(itemsText) {
+  var items = [];
+  if (!itemsText) return items;
+  var lines = itemsText.toString().split("\n");
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var match = line.match(/^(.+?)\s*\(([^)]+)\):\s*(\d+)u$/);
+    if (match) {
+      items.push({
+        product: {
+          name: match[1].trim(),
+          sku: match[2].trim()
+        },
+        quantity: parseInt(match[3]) || 0
+      });
+    } else {
+      items.push({
+        product: {
+          name: line,
+          sku: "GENERIC"
+        },
+        quantity: 0
+      });
+    }
+  }
+  return items;
+}
+
+function enviarCorreosConfirmacionPago(payload, txId, driveUrl, pdfBlob) {
+  var adminEmail = CONFIG.ADMIN_EMAIL;
+  var customerEmail = (payload.buyerEmail || "").toString().trim();
+
+  var productsRows = "";
+  if (payload.items && payload.items.length > 0) {
+    productsRows = payload.items.map(function(item) {
+      var unitPrice = payload.unitPrice || 0;
+      var sub = item.quantity * unitPrice;
+      return "<tr>" +
+             "<td style='padding:10px; border-bottom:1px solid #e2e8f0; font-weight:bold; color:#1e293b;'>Rosario " + item.product.name + "<br><span style='font-size:11px; color:#64748b; font-weight:normal;'>SKU: " + item.product.sku + "</span></td>" +
+             "<td style='padding:10px; border-bottom:1px solid #e2e8f0; text-align:center; font-weight:bold; color:#0f172a;'>" + item.quantity + " u</td>" +
+             "<td style='padding:10px; border-bottom:1px solid #e2e8f0; text-align:right; color:#475569;'>S/. " + unitPrice.toFixed(2) + "</td>" +
+             "<td style='padding:10px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:bold; color:#1b5eac;'>S/. " + sub.toFixed(2) + "</td>" +
+             "</tr>";
+    }).join("");
+  }
+
+  // Correo de Confirmación para el Cliente (HTML Premium)
+  if (customerEmail !== "") {
+    var customerBody = 
+      "<div style='font-family:sans-serif; max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 4px 6px rgba(0,0,0,0.05);'>" +
+        "<div style='background:linear-gradient(135deg, #10b981, #059669); padding:24px; text-align:center; color:white;'>" +
+          "<span style='font-size:36px; display:block; margin-bottom:10px;'>💳</span>" +
+          "<h2 style='margin:0; font-size:20px; font-weight:800; letter-spacing:0.5px;'>¡PAGO CONFIRMADO CON ÉXITO!</h2>" +
+          "<p style='margin:5px 0 0; font-size:13px; opacity:0.9;'>Comprobante Oficial de Transacción Izipay</p>" +
+        "</div>" +
+        "<div style='padding:24px; background:#ffffff; color:#334155; line-height:1.6;'>" +
+          "<p style='font-size:14px;'>Hola <strong>" + payload.buyerName + "</strong>,</p>" +
+          "<p style='font-size:14px;'>Queremos informarte que hemos recibido y procesado de forma exitosa tu pago en línea para la <strong>Orden de Compra N° " + payload.orderId + "</strong>.</p>" +
+          
+          "<div style='background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:15px; margin:20px 0; font-size:13px; color:#166534;'>" +
+            "<table style='width:100%; border-collapse:collapse;'>" +
+              "<tr><td style='padding:4px 0; color:#15803d;'><strong>ID Transacción Izipay:</strong></td><td style='padding:4px 0; text-align:right; font-family:monospace; font-weight:bold;'>" + txId + "</td></tr>" +
+              "<tr><td style='padding:4px 0; color:#15803d;'><strong>Monto Pagado:</strong></td><td style='padding:4px 0; text-align:right; font-size:15px; font-weight:bold;'>S/. " + parseFloat(payload.grandTotal).toFixed(2) + "</td></tr>" +
+              "<tr><td style='padding:4px 0; color:#15803d;'><strong>Estado de Pago:</strong></td><td style='padding:4px 0; text-align:right; font-weight:bold; color:#047857;'>APROBADO ✅</td></tr>" +
+            "</table>" +
+          "</div>" +
+
+          "<h4 style='color:#a70025; font-size:12px; font-weight:800; letter-spacing:0.5px; border-bottom:1px solid #f1f5f9; padding-bottom:5px; margin-top:20px; text-transform:uppercase;'>RESUMEN DEL PEDIDO</h4>" +
+          "<table style='width:100%; border-collapse:collapse; font-size:12px; margin-top:10px;'>" +
+            "<thead><tr style='background:#f8fafc;'><th style='padding:10px; text-align:left; color:#64748b;'>Producto</th><th style='padding:10px; text-align:center; color:#64748b;'>Cant.</th><th style='padding:10px; text-align:right; color:#64748b;'>P. Unit.</th><th style='padding:10px; text-align:right; color:#64748b;'>Total</th></tr></thead>" +
+            "<tbody>" + productsRows + "</tbody>" +
+          "</table>" +
+
+          "<p style='font-size:13px; color:#64748b; margin-top:25px;'>Se ha adjuntado el comprobante PDF oficial de tu compra a este correo. También puedes acceder y guardarlo en la nube en cualquier momento mediante este enlace:</p>" +
+          "<div style='text-align:center; margin:20px 0;'>" +
+            "<a href='" + driveUrl + "' target='_blank' style='background:#10b981; color:white; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:13px; display:inline-block; box-shadow:0 4px 6px rgba(16,185,129,0.25);'>📄 Ver Comprobante PDF en Drive</a>" +
+          "</div>" +
+          
+          "<p style='font-size:12px; color:#94a3b8; border-top:1px solid #f1f5f9; padding-top:15px; margin-top:30px; text-align:center;'>Este es un comprobante automático de Rosarios Peruanos & Somos Marketing Perú EIRL.</p>" +
+        "</div>" +
+      "</div>";
+
+    try {
+      GmailApp.sendEmail(
+        customerEmail,
+        "💳 Pago Confirmado Exitosamente - Orden N° " + payload.orderId,
+        "",
+        {
+          htmlBody: customerBody,
+          attachments: [pdfBlob]
+        }
+      );
+    } catch(e) {
+      try {
+        MailApp.sendEmail({
+          to: customerEmail,
+          subject: "💳 Pago Confirmado Exitosamente - Orden N° " + payload.orderId,
+          htmlBody: customerBody,
+          attachments: [pdfBlob]
+        });
+      } catch(mailErr) {}
+    }
+  }
+
+  // Correo de Notificación para el Admin
+  var adminBody = 
+    "<div style='font-family:sans-serif; padding:20px; color:#334155;'>" +
+      "<h2>💳 Pago Confirmado vía Izipay</h2>" +
+      "<p>Se ha registrado un pago exitoso con tarjeta de crédito/débito para la <strong>Orden N° " + payload.orderId + "</strong>.</p>" +
+      "<ul>" +
+        "<li><strong>Cliente:</strong> " + payload.buyerName + "</li>" +
+        "<li><strong>DNI/RUC:</strong> " + payload.buyerRuc + "</li>" +
+        "<li><strong>Monto:</strong> S/. " + parseFloat(payload.grandTotal).toFixed(2) + "</li>" +
+        "<li><strong>Transacción ID:</strong> <code>" + txId + "</code></li>" +
+        "<li><strong>Enlace PDF en Drive:</strong> <a href='" + driveUrl + "'>" + driveUrl + "</a></li>" +
+      "</ul>" +
+      "<p>El estado de la orden en Google Sheets ha sido actualizado a <strong>PAGADO (Izipay)</strong>.</p>" +
+    "</div>";
+
+  try {
+    GmailApp.sendEmail(
+      adminEmail,
+      "💳 Pago Confirmado por Izipay - Orden N° " + payload.orderId,
+      "",
+      {
+        htmlBody: adminBody,
+        attachments: [pdfBlob]
+      }
+    );
+  } catch(e) {
+    try {
+      MailApp.sendEmail({
+        to: adminEmail,
+        subject: "💳 Pago Confirmado por Izipay - Orden N° " + payload.orderId,
+        htmlBody: adminBody,
+        attachments: [pdfBlob]
+      });
+    } catch(mailErr) {}
+  }
+}
+
+
 
 /**
  * Consulta y devuelve la información actualizada en tiempo real de una Orden desde Google Sheets
@@ -650,6 +952,12 @@ function construirPDFHTML(d, ocN) {
       '<div style="font-size:18px; font-weight:900; color:#a70025; margin-top:8px;">TOTAL ORDEN: S/. ' + total.toFixed(2) + '</div>' +
     '</div>';
 
+  var isPaid = (d.status && d.status.toString().indexOf("PAGADO") !== -1);
+  var boxBg = isPaid ? "#ecfdf5" : "#fdf2f2";
+  var boxBorder = isPaid ? "5px solid #10b981" : "5px solid #a70025";
+  var boxTitleColor = isPaid ? "#047857" : "#a70025";
+  var paidStampHtml = isPaid ? '<div style="margin-top:5px; font-weight:900; color:#047857; font-size:11px; background:#d1fae5; display:inline-block; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;">💳 PAGADO VÍA IZIPAY</div>' : '';
+
   return '<!DOCTYPE html>' +
     '<html>' +
     '<head>' +
@@ -660,8 +968,8 @@ function construirPDFHTML(d, ocN) {
         '.header { width: 100%; border-bottom: 3px solid #a70025; padding-bottom: 15px; margin-bottom: 20px; }' +
         '.h-tag { color: #a70025; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; display:block; margin-bottom:4px; text-transform:uppercase; }' +
         '.h-logo { font-size: 30px; font-weight: 900; color: #0f172a; margin: 0; }' +
-        '.oc-box { background: #fdf2f2; padding: 10px 15px; border-left: 5px solid #a70025; border-radius: 4px; }' +
-        '.oc-title { font-size: 18px; font-weight: 900; color: #a70025; }' +
+        '.oc-box { background: ' + boxBg + '; padding: 10px 15px; border-left: ' + boxBorder + '; border-radius: 4px; }' +
+        '.oc-title { font-size: 18px; font-weight: 900; color: ' + boxTitleColor + '; }' +
         '.oc-sub { font-size: 11px; color: #475569; margin-top:2px; }' +
         'table.layout-tb { width: 100%; border-collapse: collapse; }' +
         'table.layout-tb td { vertical-align: top; }' +
@@ -683,10 +991,12 @@ function construirPDFHTML(d, ocN) {
             '<div class="oc-box">' +
               '<div class="oc-title">ORDEN N° ' + ocN + '</div>' +
               '<div class="oc-sub">Fecha Emisión: ' + new Date().toLocaleDateString('es-PE') + '</div>' +
+              paidStampHtml +
             '</div>' +
           '</td>' +
         '</tr>' +
-      '</table>' +
+      '</table>'
+ +
 
       '<table class="layout-tb">' +
         '<tr>' +

@@ -177,12 +177,16 @@ function navigateTo(pageId) {
   });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  
+
   if (pageId === 'checkout' || pageId === 'tienda') {
     renderCheckoutPage();
     renderShopCartMatrix();
   }
 }
+
+window.navigateTo = navigateTo;
+
+
 
 // ================= SHOP CONFIGURATOR =================
 function selectProduct(id) {
@@ -1321,9 +1325,9 @@ window.app = {
   lookupAndRenderConfirmedOrder,
   openIzipayModal,
   closeIzipayModal,
-  processIzipayPayment,
   closeAllModals
 };
+
 
 // ── MANEJADORES DE CONSULTA Y PAGO DE ORDEN CONFIRMADA POR ALMACÉN / CHATBOT ──
 async function handleLookupSubmit(e) {
@@ -1446,7 +1450,7 @@ function renderConfirmedPaymentCard(o) {
           <span style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 700;">Flete</span>
           <div style="font-size: 1.3rem; font-weight: 900; color: #1e3a8a;">${o.shippingFee === 0 ? 'GRATIS' : 'S/. ' + o.shippingFee.toFixed(2)}</div>
         </div>
-        <button type="button" onclick="window.app.openIzipayModal('${o.orderId}', ${o.grandTotal}, '${encodeURIComponent(o.buyerName || 'Cliente')}')" class="btn-primary" style="background: linear-gradient(135deg, #1d4ed8, #2563eb); border: none; color: white; padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; box-shadow: 0 4px 15px rgba(37,99,235,0.4); transition: transform 0.2s ease;">
+        <button type="button" id="btn-pay-izipay-trigger" onclick="openIzipayModal('${o.orderId}', ${o.grandTotal}, '${encodeURIComponent(o.buyerName || 'Cliente')}')" class="btn-primary" style="background: linear-gradient(135deg, #1d4ed8, #2563eb); border: none; color: white; padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; box-shadow: 0 4px 15px rgba(37,99,235,0.4); transition: transform 0.2s ease;">
           <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; opacity: 0.95; letter-spacing: 0.5px;">💳 PAGAR AHORA CON IZIPAY</span>
           <div style="font-size: 1.5rem; font-weight: 900; color: white;">S/. ${o.grandTotal.toFixed(2)} →</div>
         </button>
@@ -1464,6 +1468,15 @@ function renderConfirmedPaymentCard(o) {
     </div>
   `;
 
+  // Asignar Listener directo por JavaScript para asegurar ejecución independientemente de inline handlers
+  const btnTrigger = document.getElementById('btn-pay-izipay-trigger');
+  if (btnTrigger) {
+    btnTrigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      openIzipayModal(o.orderId, o.grandTotal, encodeURIComponent(o.buyerName || 'Cliente'));
+    });
+  }
+
   // Actualizar totales en la columna derecha
   updateTotalsSummaryConfirmed(o);
 
@@ -1471,19 +1484,27 @@ function renderConfirmedPaymentCard(o) {
   container.scrollIntoView({ behavior: 'smooth' });
 }
 
-// ── MANEJADORES DE PASARELA DE PAGO IZIPAY PERÚ ──
+// ── MANEJADORES DE PASARELA DE PAGO IZIPAY PERÚ (REST V4 SMARTFORM) ──
 let currentIzipayPaymentData = null;
+let izipayKrInitialized = false;
 
-function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
+async function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
+  console.log('[IZIPAY] Abriendo modal de pago para orden:', orderId, grandTotal);
   const buyerName = decodeURIComponent(buyerNameEncoded || 'Cliente');
   currentIzipayPaymentData = { orderId, grandTotal, buyerName };
 
   const modal = document.getElementById('izipay-checkout-modal');
-  if (!modal) return;
+  if (!modal) {
+    console.error('[IZIPAY ERROR] No se encontró el elemento #izipay-checkout-modal en el DOM');
+    return;
+  }
 
   const ordIdEl = document.getElementById('izipay-modal-order-id');
   const clientNameEl = document.getElementById('izipay-modal-client-name');
   const totalAmountEl = document.getElementById('izipay-modal-total-amount');
+  const spinnerEl = document.getElementById('izipay-loading-spinner');
+  const formWrapperEl = document.getElementById('izipay-form-wrapper');
+  const errorContainer = document.getElementById('izipay-error-container');
   const wspAltBtn = document.getElementById('izipay-wsp-alt-btn');
 
   if (ordIdEl) ordIdEl.innerText = orderId;
@@ -1495,34 +1516,147 @@ function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
     wspAltBtn.href = `https://wa.me/51969654895?text=${msg}`;
   }
 
+  // Mostrar indicador de carga y ocultar formulario/error
+  if (spinnerEl) spinnerEl.style.display = 'block';
+  if (formWrapperEl) formWrapperEl.style.display = 'none';
+  if (errorContainer) errorContainer.style.display = 'none';
+
+  // Fuerza bruta CSS para asegurar visualización por encima de cualquier otro elemento
   modal.style.display = 'flex';
+  modal.style.opacity = '1';
+  modal.style.pointerEvents = 'auto';
+  modal.style.zIndex = '999999';
   modal.classList.add('active');
+
+
+  try {
+
+
+    // 1. Solicitar formToken al backend (Google Apps Script) pasándole el orderId
+    const payload = {
+      action: 'createIzipayToken',
+      type: 'createIzipayToken',
+      orderId: orderId,
+      secretKey: 'RP2026-SOMOS-MKT-PERU-SECURE-9k2x'
+    };
+
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} al solicitar token`);
+    const json = await resp.json();
+
+    if (!json.success || !json.formToken) {
+      throw new Error(json.message || 'No se pudo generar el token de pago con Izipay');
+    }
+
+    const formToken = json.formToken;
+
+    // 2. Si el SDK de Krypton (KR) está disponible, adjuntar el token
+    if (typeof KR !== 'undefined') {
+      await KR.setFormToken(formToken);
+
+
+      if (!izipayKrInitialized) {
+        izipayKrInitialized = true;
+        
+        // Escuchar el evento de finalización de pago en Izipay
+        KR.onSubmit(async function(paymentData) {
+          if (paymentData.clientAnswer && paymentData.clientAnswer.orderStatus === 'PAID') {
+            await handleIzipayPaymentSuccess(paymentData.clientAnswer);
+            return false; // Evitar redirección por defecto
+          } else {
+            alert('⚠️ El pago no se pudo completar. Por favor revise los datos de su tarjeta e intente nuevamente.');
+            return false;
+          }
+        });
+      }
+
+      if (spinnerEl) spinnerEl.style.display = 'none';
+      if (formWrapperEl) formWrapperEl.style.display = 'block';
+
+    } else {
+      // Fallback si la librería aún no ha cargado en el cliente
+      if (spinnerEl) spinnerEl.style.display = 'none';
+      if (formWrapperEl) formWrapperEl.style.display = 'block';
+      const krContainer = document.getElementById('izipay-kr-embedded');
+      if (krContainer) krContainer.setAttribute('kr-form-token', formToken);
+    }
+
+  } catch (err) {
+    if (spinnerEl) spinnerEl.style.display = 'none';
+    if (errorContainer) {
+      errorContainer.style.display = 'block';
+      errorContainer.innerHTML = `⚠️ <strong>Inconveniente al conectar con Izipay:</strong><br>${err.message}<br><br><span style="font-size:0.75rem; color:#7f1d1d;">Nota: Asegúrese de configurar su Clave REST API Password en Google Apps Script. Puede coordinar el pago directo con Silvia por WhatsApp.</span>`;
+    }
+  }
 }
+
+async function handleIzipayPaymentSuccess(clientAnswer) {
+  if (!currentIzipayPaymentData) return;
+  const { orderId, grandTotal, buyerName } = currentIzipayPaymentData;
+  const txId = (clientAnswer.transactions && clientAnswer.transactions[0]) ? clientAnswer.transactions[0].uuid : 'TX-IZIPAY';
+
+  // Notificar al backend de Google Apps Script para actualizar el estado a PAGADO
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'confirmIzipayPayment',
+        type: 'confirmIzipayPayment',
+        orderId: orderId,
+        transactionId: txId,
+        krAnswer: clientAnswer,
+        secretKey: 'RP2026-SOMOS-MKT-PERU-SECURE-9k2x'
+      })
+    });
+  } catch(e) {}
+
+  // 1. Cerrar el modal de pasarela de pago Izipay
+  closeIzipayModal();
+
+  // 2. Rellenar los datos del modal de éxito premium
+  const amountEl = document.getElementById('izipay-success-amount');
+  const ordIdEl = document.getElementById('izipay-success-order-id');
+  const txIdEl = document.getElementById('izipay-success-tx-id');
+  const waBtn = document.getElementById('izipay-success-wa-btn');
+
+  if (amountEl) amountEl.innerText = `S/. ${parseFloat(grandTotal).toFixed(2)}`;
+  if (ordIdEl) ordIdEl.innerText = orderId;
+  if (txIdEl) {
+    txIdEl.innerText = txId;
+    txIdEl.title = txId;
+  }
+
+  if (waBtn) {
+    const msg = encodeURIComponent(`Hola Silvia Quispe, he realizado exitosamente el pago en línea con Izipay por S/. ${parseFloat(grandTotal).toFixed(2)} para mi Orden N° ${orderId} (${buyerName}). Transacción ID: ${txId}. Solicito confirmación de despacho.`);
+    waBtn.href = `https://wa.me/51969654895?text=${msg}`;
+  }
+
+  // 3. Abrir el modal de éxito premium de Izipay
+  const successModal = document.getElementById('izipay-success-modal');
+  if (successModal) {
+    successModal.style.display = 'flex';
+    successModal.style.opacity = '1';
+    successModal.style.pointerEvents = 'auto';
+    successModal.style.zIndex = '999999';
+    successModal.classList.add('active');
+  }
+}
+
 
 function closeIzipayModal() {
   closeAllModals();
 }
 
-function processIzipayPayment() {
-  if (!currentIzipayPaymentData) return;
+window.openIzipayModal = openIzipayModal;
+window.closeIzipayModal = closeIzipayModal;
 
-  const cardNum = document.getElementById('izipay-card-num')?.value.trim();
-  const cardExp = document.getElementById('izipay-card-exp')?.value.trim();
-  const cardCvv = document.getElementById('izipay-card-cvv')?.value.trim();
 
-  if (!cardNum || !cardExp || !cardCvv) {
-    alert('⚠️ Por favor complete todos los datos de su tarjeta (Número, Fecha de Expiración y CVV).');
-    return;
-  }
-
-  const { orderId, grandTotal, buyerName } = currentIzipayPaymentData;
-  alert(`✅ ¡Pago con Izipay Perú recibido con éxito para la Orden N° ${orderId} por S/. ${parseFloat(grandTotal).toFixed(2)}!\n\nA continuación se abrirá WhatsApp para enviar la constancia a la administradora Silvia Quispe.`);
-
-  closeIzipayModal();
-
-  const msg = encodeURIComponent(`Hola Silvia Quispe, he realizado el pago con Izipay por S/. ${parseFloat(grandTotal).toFixed(2)} para mi Orden N° ${orderId} (${buyerName}). Solicito confirmación de despacho.`);
-  window.open(`https://wa.me/51969654895?text=${msg}`, '_blank');
-}
 
 function updateTotalsSummaryConfirmed(o) {
   const sumQty = document.getElementById('sum-qty');

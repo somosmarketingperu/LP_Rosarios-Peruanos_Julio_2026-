@@ -36,6 +36,7 @@
   <!-- jsPDF: Generación de PDF programático (sin html2canvas, sin bugs de captura) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+
   <!-- Schema.org JSON-LD Structured Data -->
   <script type="application/ld+json">
     {
@@ -984,72 +985,7 @@
     <svg style="width: 28px; height: 28px;" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.182 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.53 1.975 14.06.953 11.453.953c-5.437 0-9.862 4.371-9.866 9.8.001 2.009.529 3.975 1.531 5.714L2.093 21.93l5.554-1.456zM17.06 14.382c-.272-.135-1.61-.791-1.86-.882-.25-.09-.431-.135-.612.135-.181.271-.702.881-.861 1.062-.159.18-.318.203-.59.068-.272-.135-1.147-.421-2.186-1.348-.809-.721-1.355-1.612-1.514-1.882-.159-.271-.017-.417.119-.552.122-.122.272-.318.408-.475.136-.158.181-.271.272-.452.09-.18.045-.339-.022-.475-.068-.135-.612-1.472-.839-2.016-.22-.53-.441-.457-.612-.466-.158-.008-.339-.01-.52-.01-.181 0-.476.068-.725.339-.249.271-.95.927-.95 2.26s.973 2.62 1.11 2.8c.136.18 1.914 2.923 4.637 4.1c.648.281 1.153.448 1.547.573.651.207 1.243.177 1.711.108.522-.078 1.61-.658 1.837-1.29.226-.633.226-1.176.158-1.29-.067-.113-.249-.18-.52-.315z"/></svg>
   </a>
 
-  <!-- MODAL: PASARELA DE PAGO IZIPAY PERÚ -->
-  <div id="izipay-checkout-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 520px; border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md);">
-      
-      <!-- Header banner -->
-      <div style="background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 1.5rem 1.25rem; text-align: center; position: relative;">
-        <button type="button" onclick="window.app.closeIzipayModal()" style="position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
-        <span style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 800; font-size: 0.7rem; font-family: var(--font-mono); text-transform: uppercase;">
-          PASARELA DE PAGO IZIPAY PERÚ 🔒
-        </span>
-        <h3 class="font-display" style="font-size: 1.4rem; font-weight: 900; margin: 0.4rem 0 0 0; color: white;">
-          Pago Seguro con Tarjeta Crédito / Débito
-        </h3>
-        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.9); margin-top: 0.25rem; margin-bottom: 0;">
-          Somos Marketing Perú EIRL & Rosarios Peruanos
-        </p>
-      </div>
 
-      <div class="modal-body" style="padding: 1.5rem;">
-        
-        <!-- Summary Box -->
-        <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem;">
-            <span style="color: #1e40af; font-weight: 600;">Orden de Compra:</span>
-            <strong id="izipay-modal-order-id" style="font-family: var(--font-mono); color: #1e3a8a;">RP-2026-XXXX</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem;">
-            <span style="color: #1e40af; font-weight: 600;">Titular / Cliente:</span>
-            <strong id="izipay-modal-client-name" style="color: #1e3a8a;">SMKP EIRL</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #93c5fd; padding-top: 0.5rem; margin-top: 0.5rem;">
-            <span style="font-weight: 800; color: #1e3a8a; font-size: 0.95rem;">Monto Total Confirmado:</span>
-            <strong id="izipay-modal-total-amount" style="font-size: 1.35rem; font-weight: 900; color: #15803d;">S/. 0.00</strong>
-          </div>
-        </div>
-
-        <!-- Embedded Izipay Form Container / Card Simulation -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem;">
-          <div style="font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
-            💳 Datos de Tarjeta (Visa, MasterCard, Amex, Diners):
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-            <input type="text" id="izipay-card-num" placeholder="Número de Tarjeta (16 dígitos)" maxlength="19" style="padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem; width: 100%;" />
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-              <input type="text" id="izipay-card-exp" placeholder="MM / YY" maxlength="5" style="padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem;" />
-              <input type="password" id="izipay-card-cvv" placeholder="CVV / CVC" maxlength="4" style="padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem;" />
-            </div>
-            <input type="text" id="izipay-card-name" placeholder="Nombre en la Tarjeta" style="padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; text-transform: uppercase;" />
-          </div>
-        </div>
-
-        <!-- Action Button -->
-        <button type="button" onclick="window.app.processIzipayPayment()" class="btn-primary" style="width: 100%; background: #16a34a; font-size: 1.05rem; font-weight: 900; padding: 0.85rem; justify-content: center; border-radius: var(--radius-md); box-shadow: 0 4px 14px rgba(22,163,74,0.35); cursor: pointer;">
-          🔒 CONFIRMAR Y PAGAR AHORA CON IZIPAY →
-        </button>
-
-        <div style="text-align: center; margin-top: 0.85rem;">
-          <a id="izipay-wsp-alt-btn" href="https://wa.me/51969654895" target="_blank" style="font-size: 0.78rem; color: #15803d; text-decoration: underline; font-weight: 700;">
-            💬 ¿Prefieres pagar por Yape, Plin o Transferencia? Habla con Silvia por WhatsApp
-          </a>
-        </div>
-
-      </div>
-    </div>
-  </div>
 
   <!-- MODAL: CANCELACIÓN DE ORDEN EN GOOGLE SHEETS -->
   <div id="cancel-order-modal" class="modal-overlay">
@@ -1135,11 +1071,13 @@
           <button type="button" onclick="window.app.closeAddToCartModal(); window.app.navigateTo('checkout');" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 0.95rem;">
             🛒 Ir a Finalizar Pedido y Envío →
           </button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- MODAL: PROGRESO Y LOG DE ENVÍO AL BACKEND (GOOGLE SHEETS & EMAIL) -->
+
   <div id="order-progress-modal" class="modal-overlay">
     <div class="modal-card" style="max-width: 480px; overflow: hidden; border-radius: var(--radius-xl);">
       
@@ -1243,7 +1181,157 @@
     </div>
   </div>
 
+  <!-- MODAL: PASARELA DE PAGO IZIPAY SMARTFORM (REST API V4) -->
+  <div id="izipay-checkout-modal" class="modal-overlay" style="display: none; justify-content: center !important; align-items: center !important;">
+    <div class="modal-card" style="max-width: 520px; width: 100%; margin: 1.5rem auto !important; overflow: hidden; border-radius: var(--radius-xl); box-shadow: var(--shadow-xl);">
+
+      
+      <!-- Modal Header -->
+      <div style="background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="background: white; padding: 0.35rem 0.65rem; border-radius: 6px; display: flex; align-items: center;">
+            <strong style="color: #a70025; font-size: 1.05rem; font-style: italic; font-weight: 900;">izipay</strong>
+          </div>
+          <div>
+            <h3 class="font-display" style="font-size: 1.1rem; font-weight: 800; margin: 0; color: white;">Pago Seguro con Tarjeta</h3>
+            <p style="font-size: 0.75rem; color: rgba(255,255,255,0.85); margin: 0;">Rosarios Peruanos & Somos Marketing Perú</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.app.closeIzipayModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.5rem;">
+        
+        <!-- Ficha de Resumen de la Orden -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-size: 0.72rem; color: #1e40af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Orden de Compra:</span>
+            <div id="izipay-modal-order-id" style="font-weight: 900; font-family: var(--font-mono); color: #1e3a8a; font-size: 1.1rem;">—</div>
+            <div id="izipay-modal-client-name" style="font-size: 0.8rem; color: #475569; font-weight: 600; margin-top: 0.1rem;">—</div>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 0.72rem; color: #1e40af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Monto Total:</span>
+            <div id="izipay-modal-total-amount" style="font-size: 1.4rem; font-weight: 900; color: #1d4ed8; font-family: var(--font-display);">S/. 0.00</div>
+          </div>
+        </div>
+
+        <!-- Indicador de Carga Token -->
+        <div id="izipay-loading-spinner" style="text-align: center; padding: 2rem 1rem;">
+          <div style="font-size: 2.2rem; margin-bottom: 0.5rem; animation: spin 2s infinite linear;">⏳</div>
+          <strong style="color: #1e3a8a; font-size: 0.95rem;">Generando Formulario de Pago Seguro Izipay...</strong>
+          <p style="font-size: 0.8rem; color: var(--text-gray); margin-top: 0.35rem;">Obteniendo token sellado desde el servidor encriptado PCI-DSS...</p>
+        </div>
+
+        <!-- Mensaje de Error (Oculto por defecto) -->
+        <div id="izipay-error-container" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 1rem; color: #991b1b; font-size: 0.85rem; text-align: center; margin-bottom: 1rem;"></div>
+
+        <!-- Contenedor Oficial Izipay SmartForm (Krypton JS) -->
+        <div id="izipay-form-wrapper" style="display: none; margin-top: 0.5rem;">
+          <div class="kr-embedded" id="izipay-kr-embedded">
+            <div class="kr-pan"></div>
+            <div class="kr-expiry"></div>
+            <div class="kr-security-code"></div>
+            <button class="kr-payment-button"></button>
+            <div class="kr-form-error"></div>
+          </div>
+        </div>
+
+        <!-- Alternativa Pago Directo por WhatsApp -->
+        <div style="margin-top: 1.25rem; text-align: center;">
+          <a id="izipay-wsp-alt-btn" href="#" target="_blank" style="font-size: 0.8rem; color: #047857; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
+            💬 ¿Prefieres pagar por Yape, Plin o Transferencia? Coordinar por WhatsApp →
+          </a>
+        </div>
+
+        <!-- Badges de Seguridad SSL y Medios de Pago -->
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-gray);">
+          <span style="display: flex; align-items: center; gap: 0.25rem;">🔒 Cifrado 256-bit SSL</span>
+          <span>Visa · Mastercard · Amex · Diners · Yape</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ÉXITO DE PAGO IZIPAY -->
+  <div id="izipay-success-modal" class="modal-overlay" style="display: none; justify-content: center !important; align-items: center !important;">
+    <div class="modal-card" style="max-width: 480px; width: 100%; margin: 1.5rem auto !important; overflow: hidden; border-radius: var(--radius-xl); box-shadow: var(--shadow-xl);">
+      
+      <!-- Header banner -->
+      <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 1.75rem; text-align: center; position: relative;">
+        <button type="button" onclick="closeAllModals()" style="position: absolute; top: 0.75rem; right: 0.75rem; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+        <div style="font-size: 2.8rem; margin-bottom: 0.3rem;">✅</div>
+        <h3 class="font-display" style="font-size: 1.35rem; font-weight: 800; margin: 0; color: white;">¡Pago Procesado con Éxito!</h3>
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.95); margin-top: 0.2rem; margin-bottom: 0;">Comprobante de Pago Electrónico Izipay</p>
+      </div>
+
+      <div class="modal-body" style="padding: 1.5rem;">
+        
+        <!-- Ticket Summary -->
+        <div style="background: var(--surface-alt); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border-light); margin-bottom: 1.25rem;">
+          <div style="text-align: center; border-bottom: 1px dashed var(--border-gray); padding-bottom: 0.85rem; margin-bottom: 0.85rem;">
+            <span style="font-size: 0.75rem; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Monto Transaccionado</span>
+            <div id="izipay-success-amount" style="font-size: 1.8rem; font-weight: 900; color: #065f46; margin-top: 0.15rem; font-family: var(--font-display);">S/. 0.00</div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-gray);">Número de Orden:</span>
+              <strong id="izipay-success-order-id" style="font-family: var(--font-mono); color: var(--text-dark); font-weight: 700;">—</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-gray);">ID Transacción:</span>
+              <span id="izipay-success-tx-id" style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; font-weight: 600;" title="">—</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-gray);">Medio de Pago:</span>
+              <strong style="color: var(--text-dark); font-weight: 700;">Tarjeta Online (Izipay)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-gray);">Estado de Pago:</span>
+              <strong style="color: #047857; font-weight: 800; background: #ecfdf5; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem;">APROBADO ✅</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instrucción de WhatsApp -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.25rem; text-align: center;">
+          <p style="font-size: 0.825rem; color: #166534; margin: 0; line-height: 1.4; font-weight: 600;">
+            👉 <strong>¡Paso Final Importante!</strong> Envía la confirmación a WhatsApp para que Silvia valide tu despacho en el almacén de forma inmediata.
+          </p>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+          <a id="izipay-success-wa-btn" href="#" target="_blank" class="btn-primary" style="background: #16a34a; width: 100%; justify-content: center; padding: 0.95rem; font-size: 1.05rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(22,163,74,0.35); border-radius: var(--radius-md);">
+            💬 NOTIFICAR DESPACHO A WHATSAPP →
+          </a>
+          <button type="button" onclick="closeAllModals()" class="btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 0.85rem; font-weight: 700;">
+            Cerrar y Volver
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Izipay SmartForm REST V4 Krypton Client SDK -->
+
+  <link rel="stylesheet" href="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.min.css">
+  <script 
+    src="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"
+    kr-public-key="17674381:testpublickey_xvptpCRKrkbEtJwHpzuvfpSitQyIXwkWa4sxbvRcDjCFn"
+    kr-post-url-success="index.html?action=pay_success">
+  </script>
+  <script src="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic.js"></script>
+
   <!-- Main JavaScript File -->
-  <script src="js/main.js"></script>
+  <script src="js/main.js?v=2.3"></script>
+
+
+
+
+
+
 </body>
 </html>
