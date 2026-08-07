@@ -1,7 +1,9 @@
 {
   "hosting": {
+    "site": "rosarios-peruanos",
     "public": ".",
     "ignore": [
+
       "firebase.json",
       "**/node_modules/**"
     ],
