@@ -1567,7 +1567,12 @@ async function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
         // Log de éxito cuando el formulario carga
         KR.onFormReady(function() {
           console.log('%c[IZIPAY SDK] El formulario de pago está listo y renderizado. ✅', 'color: #10b981; font-weight: bold;');
+          const errorContainer = document.getElementById('izipay-error-container');
+          if (errorContainer) {
+            errorContainer.style.display = 'none';
+          }
         });
+
 
         // Capturar y mostrar errores de validación de Izipay (como claves inválidas, red, etc.)
         KR.onError(function(err) {
