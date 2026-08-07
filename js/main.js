@@ -1564,6 +1564,23 @@ async function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
       if (!izipayKrInitialized) {
         izipayKrInitialized = true;
         
+        // Log de éxito cuando el formulario carga
+        KR.onFormReady(function() {
+          console.log('%c[IZIPAY SDK] El formulario de pago está listo y renderizado. ✅', 'color: #10b981; font-weight: bold;');
+        });
+
+        // Capturar y mostrar errores de validación de Izipay (como claves inválidas, red, etc.)
+        KR.onError(function(err) {
+          console.error('%c[IZIPAY SDK ERROR]', 'color: #ef4444; font-weight: bold;', err);
+          console.log(`Detalle del error - Código: ${err.detailedErrorCode || err.errorCode} | Mensaje: ${err.detailedErrorMessage || err.errorMessage}`);
+          
+          const errorContainer = document.getElementById('izipay-error-container');
+          if (errorContainer) {
+            errorContainer.style.display = 'block';
+            errorContainer.innerHTML = `⚠️ <strong>Error del SDK de Izipay:</strong><br>Código: ${err.detailedErrorCode || err.errorCode}<br>Mensaje: ${err.detailedErrorMessage || err.errorMessage}`;
+          }
+        });
+        
         // Escuchar el evento de finalización de pago en Izipay
         KR.onSubmit(async function(paymentData) {
           if (paymentData.clientAnswer && paymentData.clientAnswer.orderStatus === 'PAID') {
@@ -1575,6 +1592,7 @@ async function openIzipayModal(orderId, grandTotal, buyerNameEncoded) {
           }
         });
       }
+
 
       if (spinnerEl) spinnerEl.style.display = 'none';
       if (formWrapperEl) formWrapperEl.style.display = 'block';
