@@ -1450,10 +1450,11 @@ function renderConfirmedPaymentCard(o) {
           <span style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 700;">Flete</span>
           <div style="font-size: 1.3rem; font-weight: 900; color: #1e3a8a;">${o.shippingFee === 0 ? 'GRATIS' : 'S/. ' + o.shippingFee.toFixed(2)}</div>
         </div>
-        <button type="button" id="btn-pay-izipay-trigger" onclick="openIzipayModal('${o.orderId}', ${o.grandTotal}, '${encodeURIComponent(o.buyerName || 'Cliente')}')" class="btn-primary" style="background: linear-gradient(135deg, #1d4ed8, #2563eb); border: none; color: white; padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; box-shadow: 0 4px 15px rgba(37,99,235,0.4); transition: transform 0.2s ease;">
+        <button type="button" id="btn-pay-izipay-trigger" class="btn-primary" style="background: linear-gradient(135deg, #1d4ed8, #2563eb); border: none; color: white; padding: 0.75rem 1rem; border-radius: var(--radius-md); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; box-shadow: 0 4px 15px rgba(37,99,235,0.4); transition: transform 0.2s ease;">
           <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; opacity: 0.95; letter-spacing: 0.5px;">💳 PAGAR AHORA CON IZIPAY</span>
           <div style="font-size: 1.5rem; font-weight: 900; color: white;">S/. ${o.grandTotal.toFixed(2)} →</div>
         </button>
+
       </div>
 
       <!-- Indicación y Botones de Pago / Notificación -->
